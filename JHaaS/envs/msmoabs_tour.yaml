@@ -1,0 +1,15 @@
+name: bioinftour
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - mafft
+  - hmmer
+  - fasttree
+  - cd-hit
+  - mash
+  - prodigal
+  - diamond
+  - spades
+  - viennarna
+  - infernal

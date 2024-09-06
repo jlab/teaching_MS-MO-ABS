@@ -1,0 +1,155 @@
+FROM jhaas_abs
+
+# when building the image for this docker file, we in fact run a set of tests of the underlying jhaas_abs container!
+ARG NB_UID=1000
+ARG NB_HOME=/home/jovyan
+ARG NB_USER=jovyan
+ARG DATA=${NB_HOME}/teaching_MS-MO-ABS/data/
+ARG CE_TOUR=bioinftour
+
+USER ${NB_UID}
+
+## exercise: Linux Basics 1.
+#RUN echo "hello world"
+#RUN date
+#RUN whoami
+#RUN which -a top
+#RUN echo {con,pre}{sent,fer}{s,ed}
+#RUN which -a man
+#RUN which -a bc
+#RUN echo 5+4 | bc -l
+#RUN time sleep 1
+#RUN history
+#
+## exercise: Linux Basics 2.
+#RUN pwd
+#RUN which -a ls
+#RUN mkdir 'Exercise 1'
+#RUN mv 'Exercise 1' Exercise_1
+#RUN which -a rmdir
+#RUN which -a mv
+#
+## exercise: Linux Basics 3.
+#RUN touch catcontent.txt
+#RUN cat catcontent.txt
+#RUN touch .invisible_kitten
+#RUN echo "inhalt" > .invisible_kitten
+#RUN which -a more
+#RUN which -a cp
+#
+## exercise: Linux Basics 4.
+#RUN which -a readlink
+#RUN which -a head
+#RUN which -a tail
+#RUN which -a nano
+#RUN which -a rm
+#RUN which -a groups
+#
+## exercise: Linux Level 2, 1-4
+#RUN mkdir -p www www/html www/java temp junk
+#RUN touch junk/useless
+#RUN cp junk/useless temp/
+#RUN mv temp/useless ~/ && mv junk/useless ~/othername
+#RUN rm useless othername
+#
+## exercise: Linux Level 2, 5
+#RUN cd junk && touch useless && chmod g+rw useless && chmod u+rwx useless && chmod o-rwx useless
+#RUN chgrp biologists junk/useless
+#
+## exercise: Linux Level 2, 6
+#RUN touch junk/shared.txt && chgrp biologists junk/shared.txt
+#
+## exercise: Linux Level 2, 7
+#RUN rm -rf www www/html www/java temp junk
+#
+## exercise: Linux Level 2, 8
+#RUN touch -- '-r' && rm -- '-r'
+#
+## exercise: Linux Level 2, 9
+#RUN head -n 3 ${DATA}/Unix/students.txt
+#RUN tail -n 12 ${DATA}/Unix/students.txt
+#
+## exercise: Linux - Bioinformatics file Formats
+#RUN ls -lah ${DATA}/Unix/hg19*
+#RUN wc ${DATA}/Unix/hg19*
+#RUN grep "^>" -c ${DATA}/Unix/hg19*.faa
+#RUN grep `grep "RPS8" ${DATA}/Unix/hg19_chr1_RefSeq_mapping.txt | cut -f 1` ${DATA}/Unix/hg19_chr1_RefSeq_genes.gtf  | grep exon -c
+#
+#RUN tail -n +2 ${DATA}/Unix/hg19_chr1_RefSeq_mapping.txt | cut -f 2 | sort -u | wc -l
+#RUN tail -n +2 ${DATA}/Unix/hg19_chr1_RefSeq_mapping.txt | sort -k2,2 | awk '{print $2}' | uniq | wc -l
+#RUN tail -n +2 ${DATA}/Unix/hg19_chr1_RefSeq_mapping.txt | awk '{print $2}' | sort | uniq | wc -l
+#
+#RUN sed -n '/NM_001012.1/,/>/p' ${DATA}/Unix/hg19_chr1_RefSeq_genes.faa | head -n -1
+#RUN awk 'BEGIN{RS=">";FS="\n"}NR>1 {if ($1~/NM_001012.1/)print ">"$0}' ${DATA}/Unix/hg19_chr1_RefSeq_genes.faa
+#
+##RUN which -a sort
+##RUN which -a uniq
+##RUN which -a grep
+#
+## lecture "Unix Basics"
+#RUN touch testFile.txt
+#RUN export PS1="\u@\h:\w :-)  "
+#RUN mv testFile.txt foo.txt
+#RUN cp foo.txt barcopy.txt
+#RUN rm foo.txt
+#RUN touch baz.txt
+#RUN cp barcopy.txt .hidden.txt
+#RUN rm .hidden.txt barcopy.txt baz.txt
+#RUN mkdir -p tuser/Mail tuser/thesis/{pictures,literature} && touch tuser/baz.txt tuser/Mail/hello.txt tuser/thesis/literature/{1,2,3}.pdf tuser/thesis/Abstract.txt
+#RUN ps -u ${NB_USER}
+#
+##TODO: remove
+#RUN cd teaching_MS-MO-ABS && git pull && cd
+#
+#RUN cat ${DATA}/Unix/users.txt
+#RUN head -2 ${DATA}/Unix/users.txt
+#RUN tail -1 ${DATA}/Unix/users.txt
+#RUN echo "Hello World"
+#RUN sort ${DATA}/Unix/users.txt
+#RUN wc -l ${DATA}/Unix/users.txt
+#RUN grep User ${DATA}/Unix/users.txt
+#RUN cat ${DATA}/Unix/awk.txt | cut -f 1 | cut -b 6-
+#RUN ps -ef > ps.txt && head -3 ps.txt
+#RUN sort < ${DATA}/Unix/users.txt
+#RUN cat ${DATA}/Unix/users.txt | sort
+#RUN ps -f -u `whoami`
+#RUN find ${NB_HOME} -name users.txt
+#RUN basename /homes/juser/foo.jpg 
+#RUN dirname /homes/juser/foo.jpg 
+#RUN touch ~/foo.jpg && readlink -f ~/foo.jpg
+#
+#RUN wget http://hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/chr21.fa.gz
+#RUN gunzip chr21.fa.gz
+#RUN tail -n 2000 chr21.fa | head -n 15 > chr21subset.fa; true  # see https://stackoverflow.com/questions/19120263/why-exit-code-141-with-grep-q
+#RUN cat chr21subset.fa | grep "atg"
+#RUN cat chr21subset.fa | sed s/atg/ATG/g
+#RUN cat chr21subset.fa | tr -d "\n" | sed s/atg/ATG/g | fold -w 50
+
+
+# Bioinformatics Tour
+# Make RUN commands use the new environment:
+# append --format docker to the build command, see https://github.com/containers/podman/issues/8477
+SHELL ["conda", "run", "-n", "bioinftour", "/bin/bash", "-c"]
+WORKDIR "${DATA}"
+RUN mafft
+RUN mafft meiers.fasta
+RUN hmmbuild meiers.hmm meiers.msa
+RUN hmmsearch meiers.hmm meierhistory.txt
+RUN fasttree meiers.msa
+RUN mafft <(for l in `cat meiers.fasta | grep -v "^>"`; do echo ">$l"; echo $l; done) 2> /dev/null | fasttree
+RUN cdhit -i meiers.fasta -o cluster_meiers -l 4 -c 0.6 -n 3
+RUN split -l 2 meiers.fasta sm_ && mash dist sm_* -k 1
+RUN mash dist NC_*.gz -k 15 | cut -f 2- | column -t
+RUN zcat NC_000913* | prodigal -a ecoli.fasta
+RUN zcat NC_003210* | prodigal -a listeria.fasta
+RUN diamond makedb -d ecoli --in ecoli.fasta
+RUN diamond blastp --db ecoli -q listeria.fasta | cut -f 1 | sort | uniq -c | sort -n | tail -n 20
+RUN diamond blastp --max-target-seqs 1 --db ecoli -q listeria.fasta | cut -f 1 | sort | uniq -c | sort -n | tail -n 20
+RUN spades.py -s ass_reads_50-30.fq.gz -o myassembly
+RUN spades.py -s ass_reads_50-60.fq.gz -o myassembly_60
+RUN mafft <(cat sarscov2_* myassembly_60/contigs.fasta) 2> /dev/null
+RUN cat trna.fasta | RNAfold
+RUN cat mrna.fasta hsa-mir* | RNAfold
+RUN wget "https://rfam.org/family/RF00675/alignment?acc=RF00675&format=stockholm&download=0" -O mir145.stk
+RUN cmbuild mir145.cm mir145.stk
+RUN cmalign mir145.cm hg38_chr5_rnahit.fasta
