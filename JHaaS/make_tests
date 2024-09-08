@@ -1,12 +1,30 @@
 SHELL=/usr/bin/bash
-
 DATA=$$HOME/teaching_MS-MO-ABS/data/
 
-all: test_unix test_tour
-
 test_unix: test_ex_unix_basic1 test_ex_unix_basic2 test_ex_unix_basic3 test_ex_unix_basic4 test_ex_unix_level2 test_ex_unix_fileformats test_lecture_unix
-
 test_tour: test_lecture_tour
+test_ngs: test_ngs_mapping test_ngs_bowtie2
+
+test_ngs_bowtie2: test_ngs_sra
+	@bowtie2 -x ~/biodata/hg19 -1 SRR3923550_1.fastq.bz2 -2 SRR3923550_2.fastq.bz2 -S SRR3923550_full.sam -p 4
+	@samtools view -bh SRR3923550_full.sam -o SRR3923550_full.bam
+	@samtools sort SRR3923550_full.bam -o SRR3923550_full_sorted.bam
+	@samtools index SRR3923550_full_sorted.bam
+	@samtools mpileup -r chr9:21971132-21971142 SRR3923550_full_sorted.bam
+	
+test_ngs_mapping:
+	@mkdir ~/04_NGS/hg19_chr9_index -p
+	@cd ~/04_NGS/hg19_chr9_index
+	@wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/chromosomes/chr9.fa.gz
+	@gunzip chr9.fa.gz
+	@bowtie2-build --threads 4 chr9.fa hg19_chr9
+
+test_ngs_sra:
+	#SRR3923550
+	@mkdir ~/04_NGS
+	@cd ~/04_NGS
+	@fasterq-dump -p SRR3923550  # ~1GB of data
+	@bzip2 --fast SRR*.fastq
 
 test_lecture_tour:
 	# Bioinformatics Tour (must be executed in the appropriate conda env)
