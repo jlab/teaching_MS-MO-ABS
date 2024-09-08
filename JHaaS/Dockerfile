@@ -47,5 +47,5 @@ RUN ln -s /opt/conda/envs/${CE_TOUR}/bin/cd-hit /opt/conda/envs/${CE_TOUR}/bin/c
 
 # TODO: move to the top!
 USER root
-RUN apt-get -y install bsdmainutils
+RUN apt-get -y install bsdmainutils time
 USER ${NB_UID}
