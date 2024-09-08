@@ -11,7 +11,7 @@ USER ${NB_UID}
 
 COPY make_tests .
 # execute Unix tests (base conda env)
-#RUN make -f ~/make_tests test_unix
+RUN make -f ~/make_tests test_unix
 
 # execute Bioinformatics Tour (bioinftour conda env)
 # Make RUN commands use the new environment:
@@ -19,3 +19,8 @@ COPY make_tests .
 SHELL ["conda", "run", "-n", "bioinftour", "/bin/bash", "-c"]
 WORKDIR "${DATA}"
 RUN make -f ~/make_tests test_tour
+
+# execute NGS tests
+SHELL ["conda", "run", "-n", "rnaseq", "/bin/bash", "-c"]
+WORKDIR "${DATA}"
+RUN make -f ~/make_tests test_ngs
