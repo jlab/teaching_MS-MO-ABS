@@ -10,8 +10,13 @@ ARG CE_TOUR=bioinftour
 USER ${NB_UID}
 
 COPY make_tests .
+COPY python_intro.ipynb ${DATA}/../
+
 # execute Unix tests (base conda env)
 RUN make -f ~/make_tests test_unix
+
+# convert notebook into python script and execute
+RUN make -C ${DATA}/../ -f ~/make_tests test_python
 
 # execute Bioinformatics Tour (bioinftour conda env)
 # Make RUN commands use the new environment:

@@ -63,9 +63,17 @@ COPY DL/*.bt2 biodata/
 
 
 RUN git clone -b ${BRANCH} https://github.com/jlab/teaching_MS-MO-ABS.git
+
+# install Venn diagram lib for python lecture in the conda base environment
+RUN mamba install --yes -c conda-forge matplotlib-venn
+
 #
 ## TODO: move to the top!
 #USER root
 #RUN apt-get -y install bsdmainutils time
 #USER ${NB_UID}
 #
+
+#USER root
+#RUN mkdir -p /vonAussen && chown jovyan /vonAussen && chgrp users /vonAussen && chmod u+rwx /vonAussen 
+#USER ${NB_UID}

@@ -4,6 +4,11 @@ DATA=$$HOME/teaching_MS-MO-ABS/data/
 test_unix: test_ex_unix_basic1 test_ex_unix_basic2 test_ex_unix_basic3 test_ex_unix_basic4 test_ex_unix_level2 test_ex_unix_fileformats test_lecture_unix
 test_tour: test_lecture_tour
 test_ngs: test_ngs_mapping test_ngs_bowtie2
+test_python: test_notebook
+
+test_notebook:
+	@jupyter nbconvert --to python python_intro.ipynb
+	@ipython python_intro.py
 
 test_ngs_bowtie2: test_ngs_sra
 	@bowtie2 -x ~/biodata/hg19 -1 SRR3923550_1.fastq.bz2 -2 SRR3923550_2.fastq.bz2 -S SRR3923550_full.sam -p 4
@@ -21,7 +26,7 @@ test_ngs_mapping:
 
 test_ngs_sra:
 	#SRR3923550
-	@mkdir ~/04_NGS
+	@mkdir -p ~/04_NGS
 	@cd ~/04_NGS
 	@fasterq-dump -p SRR3923550  # ~1GB of data
 	@bzip2 --fast SRR*.fastq
