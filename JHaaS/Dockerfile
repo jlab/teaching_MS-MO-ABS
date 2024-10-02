@@ -17,6 +17,9 @@ ARG NB_UID=1000
 ARG NB_HOME=/home/jovyan
 ARG NB_USER=jovyan
 
+# one directory that shall contain pre-fetched reference data
+ARG DIR_REFERENCES=${NB_HOME}/biodata
+
 # --- do not delete! this block is important! ---
 USER root
 
@@ -48,32 +51,45 @@ COPY envs/msmoabs_rnaseq.yaml msmoabs_rnaseq.yaml
 RUN mamba env create --yes --name ${CE_RNASEQ} --file msmoabs_rnaseq.yaml 
 
 # PREPARE DATA FOR STUDENTS
-RUN mkdir ~/biodata/ 
-# 1. hg19 bowtie2 index: ~7.3 GB data
-# There are three alternative routes
-#    a) download assembly and build index yourself  (takes too much compute)
-#        cd ~/biodata && wget https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz
-#        gunzip ~/biodata/hg19.fa.gz
-#        SHELL ["conda", "run", "-n", "rnaseq", "/bin/bash", "-c"]
-#        bowtie2-build --threads 8 ~/biodata/hg19.fa ~/biodata/hg19_full
-#    b) download from original source
-#        RUN cd ~/biodata && wget https://genome-idx.s3.amazonaws.com/bt/hg19.zip && unzip hg19.zip
-#    c) copy into container, if rebuilding more frequently
-COPY DL/*.bt2 biodata/
+RUN mkdir ${DIR_REFERENCES}
+# Copy the hg19 bowtie2 index (~7.3 GB data) into the container to save bandwidth and time
+# If you use the make target 'jhaas', the files get downloaded through the make process and will be
+# copied into the container. If this pre-fetch was not executed, the RUN if statement resolves to true
+# and download of the files will happen from within the container
+COPY foo BuildCache/hg19.*.bt2 ${DIR_REFERENCES}/
+RUN  if [ ! -e ${DIR_REFERENCES}/hg19.1.bt2 ] ; then cd ${DIR_REFERENCES}; wget https://genome-idx.s3.amazonaws.com/bt/hg19.zip; unzip hg19.zip; fi
 
+## 2. six RNAseq example datasets
+COPY samples_rnaseq.txt BuildCache/RNA-seq_shScr_*.fastq.gz ${DIR_REFERENCES}/
+SHELL ["conda", "run", "-n", "rnaseq", "/bin/bash", "-c"]
+RUN  if [ ! -e ${DIR_REFERENCES}/RNA-seq_shScr_TNF_1.fastq.gz ] ; then export IFS=$'\x0a' && for line in `cat samples_rnaseq.txt | grep -v "^#"`; do url=`echo $line | cut -f 3`; name=`echo $line | cut -f 2 | tr " " "_"`; wget "$url"; fasterq-dump ./`basename $url` -F fastq --skip-technical; gzip `basename $url`.fastq -9; mv `basename $url`.fastq.gz $name.fastq.gz; done; fi;
 
 RUN git clone -b ${BRANCH} https://github.com/jlab/teaching_MS-MO-ABS.git
 
 # install Venn diagram lib for python lecture in the conda base environment
-RUN mamba install --yes -c conda-forge matplotlib-venn
+SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
+RUN conda install --yes -c conda-forge matplotlib-venn
 
-#
-## TODO: move to the top!
-#USER root
-#RUN apt-get -y install bsdmainutils time
-#USER ${NB_UID}
-#
+# IFF created during make, copy trimmed, sorted bam files for RNAseq into container
+COPY foo BuildCache/RNA-seq_shScr_*.bam ${DIR_REFERENCES}/
 
-#USER root
-#RUN mkdir -p /vonAussen && chown jovyan /vonAussen && chgrp users /vonAussen && chmod u+rwx /vonAussen 
-#USER ${NB_UID}
+
+#SHELL ["conda", "run", "-n", "rnaseq", "/bin/bash", "-c"]
+#COPY make_tests make_tests
+#RUN  if [ ! -e ${DIR_REFERENCES}/RNA-seq_shScr_TNF_1.trimmed.sorted.bam ] && [ -e /hostDir ] ; then cd /hostDir; make -f ~/make_tests RNA-seq_shScr_TNF_1.trimmed.sorted.bam; fi;
+
+#WORKDIR ${NB_HOME}
+#
+#
+#
+##
+### TODO: move to the top!
+##USER root
+##RUN apt-get -y install bsdmainutils time
+##USER ${NB_UID}
+##
+#
+##USER root
+##RUN mkdir -p /vonAussen && chown jovyan /vonAussen && chgrp users /vonAussen && chmod u+rwx /vonAussen 
+##USER ${NB_UID}
+#

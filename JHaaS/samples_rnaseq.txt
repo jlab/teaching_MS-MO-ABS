@@ -1,0 +1,7 @@
+#Gene Expression Omnibus SampleID	SampleName	SRA-URL	md5checksum_fastq
+GSM1566740 	RNA-seq shScr Vehicle 1	https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718832/SRR1718832	RNA_Scr_V1.fq.gz	a7c79f1fbd98a7844a8a853b71778404
+GSM1566741 	RNA-seq shScr Vehicle 2	https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718833/SRR1718833	RNA_Scr_V2.fq.gz	8c5b7ffc140f6fae96b50c361bcfa65f
+GSM1566742 	RNA-seq shScr Vehicle 3	https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718834/SRR1718834	RNA_Scr_V3.fq.gz	b7b9e9c3553916929f526866b0352390
+GSM1566743 	RNA-seq shScr TNF 1	https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718835/SRR1718835	RNA_Scr_T1.fq.gz	71f8ac60a3b9927f1b5dad82e98cf0ff
+GSM1566744 	RNA-seq shScr TNF 2	https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718836/SRR1718836	RNA_Scr_T2.fq.gz	88316f7ecbe9926203a079c2ce44e9fe
+GSM1566745 	RNA-seq shScr TNF 3	https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718837/SRR1718837	RNA_Scr_T3.fq.gz	941fdbc7887fc44bd843086b888907cb

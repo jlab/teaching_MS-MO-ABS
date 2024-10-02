@@ -1,35 +1,117 @@
 SHELL=/usr/bin/bash
 DATA=$$HOME/teaching_MS-MO-ABS/data/
 
+# number of threads used for container build
+THREADS=6
+
+# directory into which file get pre-fetched for containger generation
+DIR_DL=BuildCache
+
+# number of lines (not reads) used to test the featureCount program. If set to a very high value, all reads will be used
+FEATCOUNTLINES=1000
+
+#### targets to build the JHaaS container
+# create one directory to hold files that need to be downloaded as preparation for building the JHaaS container
+${DIR_DL}:
+	mkdir -p ${DIR_DL}
+
+# hg19 bowtie2 index: ~7.3 GB data
+${DIR_DL}/hg19.%.bt2: ${DIR_DL}
+	if [ ! -e ${DIR_DL}/hg19.4.bt2 ]; then wget https://genome-idx.s3.amazonaws.com/bt/hg19.zip -O ${DIR_DL}/hg19.zip; cd ${DIR_DL} && unzip hg19.zip && rm -f make_hg19.sh hg19.zip; fi
+
+# six RNAseq samples from https://doi.org/10.1101%2Fgr.188300.114
+${DIR_DL}/RNA-seq_shScr_%.fastq.gz: ${DIR_DL} samples_rnaseq.txt
+	# download data through wget
+	export IFS=$$'\x0a'; sample=`echo $(notdir $@) | tr '_' ' ' | rev | cut -b 9- | rev`; line=`grep "$$sample" samples_rnaseq.txt`; url=`echo $$line | cut -f 3`; accession=`basename $$url`; cd ${DIR_DL}; if [ ! -e $$accession ]; then wget "$$url"; fi;
+	# convert SRA spots into fastq file
+	export IFS=$$'\x0a'; sample=`echo $(notdir $@) | tr '_' ' ' | rev | cut -b 9- | rev`; line=`grep "$$sample" samples_rnaseq.txt`; url=`echo $$line | cut -f 3`; accession=`basename $$url`; cd ${DIR_DL}; if [ ! -e $$accession.fastq ]; then fasterq-dump ./$$accession -F fastq --skip-technical -e $(THREADS); fi;
+	# compress fastq to fastq.gz
+	export IFS=$$'\x0a'; sample=`echo $(notdir $@) | tr '_' ' ' | rev | cut -b 9- | rev`; line=`grep "$$sample" samples_rnaseq.txt`; url=`echo $$line | cut -f 3`; accession=`basename $$url`; cd ${DIR_DL}; if [ ! -e $$accession.fastq.gz ]; then gzip ./$$accession.fastq -9; fi;
+	# give SRA file a more speaking name
+	export IFS=$$'\x0a'; sample=`echo $(notdir $@) | tr '_' ' ' | rev | cut -b 9- | rev`; line=`grep "$$sample" samples_rnaseq.txt`; url=`echo $$line | cut -f 3`; accession=`basename $$url`; cd ${DIR_DL}; if [ ! -e $(notdir $@) ]; then mv $$accession.fastq.gz $(notdir $@); fi;
+	# clean up and replace intermediate files such that they do not generated when target is executed another time
+	export IFS=$$'\x0a'; sample=`echo $(notdir $@) | tr '_' ' ' | rev | cut -b 9- | rev`; line=`grep "$$sample" samples_rnaseq.txt`; url=`echo $$line | cut -f 3`; accession=`basename $$url`; cd ${DIR_DL}; rm -f $$accession $$accession.fastq; touch $$accession $$accession.fastq $$accession.fastq.gz;
+
+${DIR_DL}/hg19_genome.tar.gz:
+	if [ ! -e ${DIR_DL}hg19_genome.tar.gz ]; then cd ${DIR_DL}; wget https://genome-idx.s3.amazonaws.com/hisat/hg19_genome.tar.gz; fi;
+
+jhaas: ${DIR_DL}/hg19.1.bt2 ${DIR_DL}/RNA-seq_shScr_TNF_1.fastq.gz ${DIR_DL}/RNA-seq_shScr_TNF_2.fastq.gz ${DIR_DL}/RNA-seq_shScr_TNF_3.fastq.gz ${DIR_DL}/RNA-seq_shScr_Vehicle_1.fastq.gz ${DIR_DL}/RNA-seq_shScr_Vehicle_2.fastq.gz ${DIR_DL}/RNA-seq_shScr_Vehicle_3.fastq.gz
+	sudo docker images | grep jhaas_tests && make -f make_tests FEATCOUNTLINES=1000 ${DIR_DL}/RNA-seq_shScr_TNF_1.trimmed.sorted.bam ${DIR_DL}/RNA-seq_shScr_TNF_2.trimmed.sorted.bam ${DIR_DL}/RNA-seq_shScr_TNF_3.trimmed.sorted.bam ${DIR_DL}/RNA-seq_shScr_Vehicle_1.trimmed.sorted.bam ${DIR_DL}/RNA-seq_shScr_Vehicle_2.trimmed.sorted.bam ${DIR_DL}/RNA-seq_shScr_Vehicle_3.trimmed.sorted.bam || true
+	sudo docker build -f Dockerfile  -t jhaas_abs .
+
+tests: ${DIR_DL}/hg19_genome.tar.gz
+	sudo docker build -f Dockerfile_runtests  -t jhaas_tests .
+
 test_unix: test_ex_unix_basic1 test_ex_unix_basic2 test_ex_unix_basic3 test_ex_unix_basic4 test_ex_unix_level2 test_ex_unix_fileformats test_lecture_unix
 test_tour: test_lecture_tour
 test_ngs: test_ngs_mapping test_ngs_bowtie2
 test_python: test_notebook
+test_rnaseq: test_rnaseq_qc test_rnaseq_hisat2 test_featureCounts
 
+test_featureCounts: ~/biodata/hg19.ncbiRefSeq.gtf RNA-seq_shScr_TNF_1.bam RNA-seq_shScr_TNF_2.bam RNA-seq_shScr_TNF_3.bam RNA-seq_shScr_Vehicle_1.bam RNA-seq_shScr_Vehicle_2.bam RNA-seq_shScr_Vehicle_3.bam
+	featureCounts -a $< -M -O -T ${THREADS} -o counts.tsv $(filter-out $<,$^)
+	
+# build trimmed, sorted bam files for the Build Cache, such that it can later be added to the "normal" container
+${DIR_DL}/RNA-seq_shScr%.trimmed.sorted.bam:
+	printf "#!/usr/bin/bash\\ncp -v ~/*.bam /hostDir/\n" > bamcopy.sh
+	printf "FROM jhaas_tests\nSHELL [\"conda\", \"run\", \"-n\", \"rnaseq\", \"/bin/bash\", \"-c\"]\nWORKDIR /home/jovyan/\nCOPY make_tests make_tests\nCOPY bamcopy.sh bamcopy.sh\nRUN make -f make_tests $(notdir $@)" > help
+	sudo docker build -f help -t jhaas_rnaseq .
+	rm -f bamcopy.sh help
+	sudo docker run -v ./${DIR_DL}:/hostDir -it jhaas_rnaseq /usr/bin/bash /home/jovyan/bamcopy.sh
+	sudo docker rmi -f jhaas_rnaseq
+
+# create a sorted bam file for hisat2 mappings against hg19, of the first n lines ( div by 4 to get reads)
+RNA-seq_shScr%.trimmed.sorted.bam: ~/biodata/hg19_splice_sites ~/biodata/RNA-seq_shScr%.fastq.gz
+	tmp=`mktemp` && \
+		zcat $(filter-out $<,$^) | head -n $(FEATCOUNTLINES) > $$tmp && \
+		tmpdir=`mktemp -d` && \
+		trim_galore --fastqc --gzip --output_dir $$tmpdir --no_report_file -j ${THREADS} $$tmp && \
+		rm -f $$tmp && \
+		hisat2 -x ~/biodata/hg19/genome --known-splicesite-infile $< -p ${THREADS} -q -U $${tmpdir}/`basename $$tmp`_trimmed.fq.gz -S $(subst .bam,.sam,$@) && \
+		rm -rf $$tmpdir && \
+		samtools view -bh $(subst .bam,.sam,$@) | samtools sort -o $@ && \
+		rm -f $(subst .bam,.sam,$@)
+
+test_rnaseq_hisat2: ~/hg19_splice_sites
+	zcat ~/biodata/RNA-seq_shScr_TNF_2.fastq.gz | head -n 4000 | gzip -c > test.fastq.gz
+	trim_galore --fastqc --gzip -o ~/trimmed/ -j ${THREADS} test.fastq.gz
+	hisat2 -x ~/biodata/hg19/genome --known-splicesite-infile $< -p ${THREADS} --summary-file test.hisat2summary -U test.fastq.gz -S test.sam
+	
+~/biodata/hg19.ncbiRefSeq.gtf:
+	wget https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/genes/hg19.ncbiRefSeq.gtf.gz -O ~/biodata/hg19.ncbiRefSeq.gtf.gz
+	cd ~/biodata && gunzip hg19.ncbiRefSeq.gtf.gz
+	
+~/biodata/hg19_splice_sites: ~/biodata/hg19.ncbiRefSeq.gtf
+	extract_splice_sites.py <(cat ~/biodata/hg19.ncbiRefSeq.gtf) > ~/biodata/hg19_splice_sites
+
+test_rnaseq_qc:
+	fastqc -o ~/ biodata/RNA-seq_shScr_TNF_2.fastq.gz
+	
 test_notebook:
 	@jupyter nbconvert --to python python_intro.ipynb
 	@ipython python_intro.py
 
 test_ngs_bowtie2: test_ngs_sra
-	@bowtie2 -x ~/biodata/hg19 -1 SRR3923550_1.fastq.bz2 -2 SRR3923550_2.fastq.bz2 -S SRR3923550_full.sam -p 4
-	@samtools view -bh SRR3923550_full.sam -o SRR3923550_full.bam
-	@samtools sort SRR3923550_full.bam -o SRR3923550_full_sorted.bam
-	@samtools index SRR3923550_full_sorted.bam
-	@samtools mpileup -r chr9:21971132-21971142 SRR3923550_full_sorted.bam
+	@bowtie2 -x ~/biodata/hg19 -1 SRR3923550_1-head.fastq.bz2 -2 SRR3923550_2-head.fastq.bz2 -S SRR3923550_head.sam -p ${THREADS}
+	@samtools view -bh SRR3923550_head.sam -o SRR3923550_head.bam
+	@samtools sort SRR3923550_head.bam -o SRR3923550_head_sorted.bam
+	@samtools index SRR3923550_head_sorted.bam
+	@samtools mpileup -r chr9:21971132-21971142 SRR3923550_head_sorted.bam
 	
 test_ngs_mapping:
-	@mkdir ~/04_NGS/hg19_chr9_index -p
-	@cd ~/04_NGS/hg19_chr9_index
-	@wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/chromosomes/chr9.fa.gz
-	@gunzip chr9.fa.gz
-	@bowtie2-build --threads 4 chr9.fa hg19_chr9
+	# we here use chr21 instead of the chr9 as in the exercises to keep compute a bit lower
+	@mkdir ~/04_NGS/hg19_chr21_index -p
+	@cd ~/04_NGS/hg19_chr21_index
+	@wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/chromosomes/chr21.fa.gz
+	@gunzip chr21.fa.gz
+	@bowtie2-build --threads ${THREADS} chr21.fa hg19_chr21
 
 test_ngs_sra:
 	#SRR3923550
 	@mkdir -p ~/04_NGS
 	@cd ~/04_NGS
 	@fasterq-dump -p SRR3923550  # ~1GB of data
-	@bzip2 --fast SRR*.fastq
+	@for r in `seq 1 2`; do head SRR*_${r}.fastq -n 4000 | bzip2 -k --fast -c > SRR3923550_${r}-head.fastq.bz2; done  # just the first 4000 lines to save compute time
 
 test_lecture_tour:
 	# Bioinformatics Tour (must be executed in the appropriate conda env)

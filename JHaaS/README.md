@@ -1,0 +1,6 @@
+This directory contains necessary files to build and test a "Jupyter as a Service" docker image.
+
+1. **Build** the docker image within the `JHaaS` directory via `make -f make_tests jhaas`. 
+  1. The container provides multiple reference files to the user. These will get downloaded, compiled during the make process. One of these steps includes calls to the program `fasterq-dump`, which you need to install in advance to download reference files once and deposit in a cache directory for multiple container builds OR defer construction of these files into the docker build process itself (changing the docker file and re-running docker build process will then repeat this step!) Install this dependency through conda: `conda install bioconda::sra-tools`
+2. **Test** the docker image locally via `make -f make_tests tests`. To ensure that all necessay programs are properly pre-installed for the exercises, we have compiled a list of tests (defined in the make_tests file). A second docker file (`Dockerfile_runtests`) is based on the `Jhaas` container and contains instructions to execute the tests.
+3. **Explore** the docker image, or better the test image - as this comes with more pre-installed files - via `sudo docker run -v ./Ext:/hostDir -it jhaas_tests /usr/bin/bash`

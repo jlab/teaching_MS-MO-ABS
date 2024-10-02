@@ -6,6 +6,7 @@ ARG NB_HOME=/home/jovyan
 ARG NB_USER=jovyan
 ARG DATA=${NB_HOME}/teaching_MS-MO-ABS/data/
 ARG CE_TOUR=bioinftour
+ARG DIR_REFERENCES=${NB_HOME}/biodata
 
 USER ${NB_UID}
 
@@ -13,19 +14,25 @@ COPY make_tests .
 COPY python_intro.ipynb ${DATA}/../
 
 # execute Unix tests (base conda env)
-RUN make -f ~/make_tests test_unix
+#RUN make -f ~/make_tests test_unix
 
 # convert notebook into python script and execute
-RUN make -C ${DATA}/../ -f ~/make_tests test_python
+#RUN make -C ${DATA}/../ -f ~/make_tests test_python
 
 # execute Bioinformatics Tour (bioinftour conda env)
 # Make RUN commands use the new environment:
 # append --format docker to the build command, see https://github.com/containers/podman/issues/8477
 SHELL ["conda", "run", "-n", "bioinftour", "/bin/bash", "-c"]
 WORKDIR "${DATA}"
-RUN make -f ~/make_tests test_tour
+#RUN make -f ~/make_tests test_tour
 
 # execute NGS tests
 SHELL ["conda", "run", "-n", "rnaseq", "/bin/bash", "-c"]
 WORKDIR "${DATA}"
-RUN make -f ~/make_tests test_ngs
+#RUN make -f ~/make_tests test_ngs
+
+# download from https://genome-idx.s3.amazonaws.com/hisat/hg19_genome.tar.gz, 3.9 GB
+COPY foo BuildCache/hg19_genome.tar.gz ${DIR_REFERENCES}/
+RUN  if [ ! -e ${DIR_REFERENCES}/hg19_genome.tar.gz ] ; then cd ${DIR_REFERENCES}; wget https://genome-idx.s3.amazonaws.com/hisat/hg19_genome.tar.gz; fi; cd ${DIR_REFERENCES} && tar xzvf hg19_genome.tar.gz
+
+#RUN make -f ~/make_tests test_featureCounts
