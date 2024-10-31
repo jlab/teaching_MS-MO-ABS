@@ -1,0 +1,42 @@
+from os.path import join, abspath, relpath
+
+configfile: 'settings.yaml'
+
+print(config['downloads'])
+
+def get_target_filepath(item):
+	if 'target_dir' not in item.keys():
+		raise ValueError('no "target_dir" specified')
+	if 'target' not in item.keys():
+		raise ValueError('no "target" name specified')
+	if ('dir_%s' % item['target_dir']) not in config.keys():
+		raise ValueError('target_dir "%s" not defined in settings!' % ('dir_%s' % item['target_dir']))
+	return relpath(join(config['dir_dist'], config['dir_%s' % item['target_dir']], item['target']))
+rule all:
+	input:
+		sra=[get_target_filepath(item) for item in config['downloads']]
+
+rule download_sra:
+	output:
+		"%s/%s/{file}" % (relpath(config['dir_dist']), config['dir_refdata'])
+	log:
+		"%s/%s/%s/{file}.log" % (relpath(config['dir_dist']), config['dir_logs'], config['dir_refdata'])
+	benchmark:
+		"%s/%s/%s/{file}.benchmark" % (relpath(config['dir_dist']), config['dir_benchmarks'], config['dir_refdata'])
+	threads:
+		2
+	params:
+		url=lambda wildcards: [item['url'] for item in config['downloads'] if item['type'] == 'sra' if item['target'] == wildcards['file']],
+		accession=lambda wildcards: [item['url'].split('/')[-1] for item in config['downloads'] if item['type'] == 'sra' if item['target'] == wildcards['file']],
+		md5=lambda wildcards: [item['md5'] for item in config['downloads'] if item['type'] == 'sra' if item['target'] == wildcards['file']],
+		proxy=lambda wildcards: config['proxy'],
+		outdir=relpath(join(config['dir_dist'], config['dir_refdata']))
+	shell:
+		'export http_proxy="{params.proxy}" 2> {log}'
+		' && export https_proxy="{params.proxy}" 2>> {log}'
+		' && export ftp_proxy="{params.proxy}" 2>> {log}'
+		' && mkdir -p `dirname {output}` 2>> {log}'
+		' && fasterq-dump -f {params.url} -F fastq --skip-technical -e {threads} -p -O {params.outdir} 2>> {log}'
+		' && md5sum -c <<<"{params.md5} {params.outdir}/{params.accession}.fastq" 2>> {log} 1>&2'
+		' && gzip {params.outdir}/{params.accession}.fastq -9 -c > {output} 2>> {log}'
+		' && rm -f {params.outdir}/{params.accession}.fastq 2>> {log}'
