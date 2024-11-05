@@ -1,0 +1,5 @@
+name: unix
+channels:
+  - bioconda
+dependencies:
+  - bedops

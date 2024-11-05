@@ -1,0 +1,30 @@
+rule hg19chr1:
+  input:
+    gtf="%s/{targetdir}/wget/hg19.ncbiRefSeq.gtf.gz" % (relpath(config['dir_dist'])),
+    fasta="%s/{targetdir}/wget/chr1.fa.gz" % (relpath(config['dir_dist']))
+  output:
+    bed="%s/{targetdir}/Unix/hg19.ncbiRefSeq.chr1.bed.gz" % (relpath(config['dir_dist'])),
+    mapping="%s/{targetdir}/Unix/hg19.ncbiRefSeq.chr1.mapping.txt.gz" % (relpath(config['dir_dist'])),
+    fasta="%s/{targetdir}/Unix/hg19.ncbiRefSeq.chr1.fasta.gz" % (relpath(config['dir_dist']))
+  log:
+    bed="%s/%s/{targetdir}/Unix/hg19chr1.bed.log" % (relpath(config['dir_dist']), config['dir_logs']),
+    mapping="%s/%s/{targetdir}/Unix/hg19chr1.mapping.log" % (relpath(config['dir_dist']), config['dir_logs']),
+    fasta="%s/%s/{targetdir}/Unix/hg19chr1.fasta.log" % (relpath(config['dir_dist']), config['dir_logs']),
+  benchmark:
+    "%s/%s/{targetdir}/Unix/hg19chr1.benchmark" % (relpath(config['dir_dist']), config['dir_benchmarks'])
+  conda:
+    "env_unix.yaml"
+  threads:
+    1
+  shell:
+    'zcat {input.gtf} | grep -P "^chr1\t" | gtf2bed | gzip -c > {output.bed} 2> {log.bed}'
+    ' && zcat {output.bed} | awk \'BEGIN{{FS="\t"}}{{if ($8~/transcript/)print $10}}\' | awk \'NR==1 {{print "#name","name2"}}BEGIN{{FS="\\""}}{{print $4"\t"$2}}\' | gzip -c > {output.mapping} 2> {log.mapping}'
+    ' && pwd=`pwd` 2> {log.fasta}'
+    ' && tmp=`mktemp -d` 2>> {log.fasta}'
+    ' && zcat {input.fasta} > $tmp/fasta 2>> {log.fasta}'
+    ' && zcat {output.bed} | grep -P "\ttranscript\t" 2>> {log.fasta} > $tmp/bed'
+    ' && cd $tmp 2>> $pwd/{log.fasta}'
+    ' && bedtools getfasta -fi fasta -bed bed -name > tmp.faa 2>> $pwd/{log.fasta}'
+    ' && gzip tmp.faa -c > $pwd/{output.fasta} 2>> $pwd/{log.fasta}'
+    ' && cd $pwd 2>> $pwd/{log.fasta}'
+    ' && rm -rf $tmp 2>> $pwd/{log.fasta}'
