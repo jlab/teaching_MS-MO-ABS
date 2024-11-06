@@ -1,6 +1,7 @@
-from os.path import join, abspath, relpath
+from os.path import join, abspath, relpath, dirname
 
 configfile: 'settings.yaml'
+localrules: build_image, exec_tests_unix, exec_tests_tour, file_notebook
 
 def get_proxy_calls():
   if 'proxy' in config.keys():
@@ -12,13 +13,62 @@ def get_proxy_calls():
 PROXYCALLS=get_proxy_calls()
 #print(config['downloads'])
 
-include: "Unix/unix.snakemake"
+#print('|'.join([name for name, item in config['downloads'].items() if 'type' in item.keys() and item['type'] == 'wget']))
 
-rule all:
+rule build_image:
   input:
-    sra=["%s/%s/SRA/%s" % (relpath(config['dir_dist']), config['dir_%s' % config['downloads']['SRA'][item]['target_dir']], item) for item in config['downloads']['SRA'].keys()],
-    sraPE=["%s/%s/SRA_PE/%s_1.fastq.bz2" % (relpath(config['dir_dist']), config['dir_%s' % config['downloads']['SRA_PE'][item]['target_dir']], item) for item in config['downloads']['SRA_PE'].keys()],
-    wget=["%s/%s/wget/%s" % (relpath(config['dir_dist']), config['dir_%s' % config['downloads']['wget'][item]['target_dir']], item) for item in config['downloads']['wget'].keys()]
+    env_tour='Tour/env_tour.yaml',
+    env_rnaseq='Envs/env_rnaseq.yaml',
+    docker='jhaas.dockerfile'
+  output:
+    "%s/jhaas_image.txt" % relpath(config['dir_dist'])
+  log:
+    "%s/Logs/jhaas_image.log" % relpath(config['dir_dist'])
+  benchmark:
+    "%s/Benchmarks/jhaas_image.benchmark" % relpath(config['dir_dist'])
+  params:
+    proxy=lambda wildcards: config['proxy'],
+    mount=join(config['dir_dist'], 'Generated'),
+    tag=config['podman']['tagprefix']
+  shell:
+    'tmp=`mktemp -d` 2> {log}'
+    ' && cp {input.env_tour} {input.env_rnaseq} {input.docker} $tmp 2>> {log}'
+    ' && podman build $tmp -f $tmp/{input.docker} -t {params.tag} --format=docker --build-arg http_proxy="{params.proxy}" --build-arg https_proxy="{params.proxy}" --build-arg ftp_proxy="{params.proxy}" 2>> {log} > {output}'
+    ' && rm -rf $tmp 2>> {log}'
+    ' && echo "image built" > {output} 2>> {log}'
+
+rule download_wget:
+  output:
+    "{targetdir}/Generated/{topic}/{file}"
+  log:
+    "{targetdir}/Logs/{topic}/{file}.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/{file}.benchmark"
+  wildcard_constraints:
+    file='|'.join([name for name, item in config['downloads'].items() if 'type' in item.keys() and item['type'] == 'wget'])
+  threads:
+    2
+  params:
+    url=lambda wildcards: config['downloads'][wildcards['file']]['url'],
+    md5=lambda wildcards: config['downloads'][wildcards['file']]['md5'],
+    proxy=lambda wildcards: config['proxy'],
+    outdir=lambda wildcards: relpath(join(wildcards['targetdir'], 'Generated', wildcards['topic']))
+  shell:
+    'export http_proxy="{params.proxy}" 2> {log}'
+    ' && export https_proxy="{params.proxy}" 2>> {log}'
+    ' && export ftp_proxy="{params.proxy}" 2>> {log}'
+    ' && wget "{params.url}" -O {output} 2>> {log}'
+    ' && md5sum -c <<<"{params.md5} {output}" 2>> {log} 1>&2'
+
+include: "Unix/unix.snakemake"
+include: "Genomics/genomics.snakemake"
+include: "Tour/tour.snakemake"
+
+#~ rule all:
+  #~ input:
+    #~ sra=["%s/%s/SRA/%s" % (relpath(config['dir_dist']), config['dir_%s' % config['downloads']['SRA'][item]['target_dir']], item) for item in config['downloads']['SRA'].keys()],
+    #~ sraPE=["%s/%s/SRA_PE/%s_1.fastq.bz2" % (relpath(config['dir_dist']), config['dir_%s' % config['downloads']['SRA_PE'][item]['target_dir']], item) for item in config['downloads']['SRA_PE'].keys()],
+    #~ wget=["%s/%s/wget/%s" % (relpath(config['dir_dist']), config['dir_%s' % config['downloads']['wget'][item]['target_dir']], item) for item in config['downloads']['wget'].keys()]
   #~ output:
     #~ all=["%s/%s/%s" % (relpath(config['dir_dist']), config['dir_refdata'], item) for item in config['downloads']['SRA'].keys()] + 
         #~ ["%s/%s/%s" % (relpath(config['dir_dist']), config['dir_refdata'], item) for item in config['downloads']['wget'].keys()]
@@ -91,49 +141,3 @@ rule download_sra_PE:
     ' && cat {params.outdir}/{params.accession}_1.fastq | bzip2 -k -9 -c > {output.r1} 2>> {log}'
     ' && cat {params.outdir}/{params.accession}_2.fastq | bzip2 -k -9 -c > {output.r2} 2>> {log}'
 
-rule download_wget:
-  output:
-    "%s/{targetdir}/wget/{file}" % (relpath(config['dir_dist']))
-  log:
-    "%s/{targetdir}/%s/wget/{file}.log" % (relpath(config['dir_dist']), config['dir_logs'])
-  benchmark:
-    "%s/{targetdir}/%s/wget/{file}.benchmark" % (relpath(config['dir_dist']), config['dir_benchmarks'])
-  threads:
-    2
-  params:
-    url=lambda wildcards: config['downloads']['wget'][wildcards['file']]['url'],
-    md5=lambda wildcards: config['downloads']['wget'][wildcards['file']]['md5'],
-    proxy=lambda wildcards: config['proxy'],
-    outdir=lambda wildcards: relpath(join(config['dir_dist'], wildcards['targetdir']))
-  shell:
-    'export http_proxy="{params.proxy}" 2> {log}'
-    ' && export https_proxy="{params.proxy}" 2>> {log}'
-    ' && export ftp_proxy="{params.proxy}" 2>> {log}'
-    ' && wget "{params.url}" -O {output} 2>> {log}'
-    ' && md5sum -c <<<"{params.md5} {output}" 2>> {log} 1>&2'
-
-
-
-#wget https://hgdownload.soe.ucsc.edu/goldenPath/archive/hg19/ncbiRefSeq/105.20220307/hg19.105.20220307.ncbiRefSeq.gtf.gz
-#gtf:
-#  107463 Zeilen
-#  44377 CDS
-#  54036 exon
-#   4529 start_codon
-#   4521 stop_codon
-#
-#gtf new:
-#  192259 Zeilen
-#     6519 3UTR
-#  12745 5UTR
-#  65952 CDS
-#  85502 exon
-#   6155 start_codon
-#   6151 stop_codon
-#   9235 transcript
-#
-
-
-#zcat no_backup/biodata/wget/hg19.ncbiRefSeq.gtf.gz | grep -P "^chr1	" | gtf2bed | gzip -c > no_backup/biodata/hg19.ncbiRefSeq.chr1.bed.gz 2> no_backup/Logs/biodata/hg19chr1.log && 
-#zcat no_backup/biodata/hg19.ncbiRefSeq.chr1.bed.gz | awk 'BEGIN{FS="	"}{if ($8~/transcript/)print $10}' | awk 'NR==1 {print "#name","name2"}BEGIN{FS='"'}{print $4"	"$2}' | gzip -c > no_backup/biodata/hg19.ncbiRefSeq.chr1.mapping.txt.gz 2>> no_backup/Logs/biodata/hg19chr1.log && 
-#tmp=`mktemp` 2>> no_backup/Logs/biodata/hg19chr1.log && cd $$tmp 2>> no_backup/Logs/biodata/hg19chr1.log && zcat no_backup/biodata/wget/chr1.fa.gz > fasta 2>> no_backup/Logs/biodata/hg19chr1.log && zcat no_backup/biodata/hg19.ncbiRefSeq.chr1.bed.gz | grep -P "	transcript	" > bed 2>> no_backup/Logs/biodata/hg19chr1.log && bedtools getfasta -fi fasta -bed bed -name > tmp.faa2>> no_backup/Logs/biodata/hg19chr1.log && gzip tmp.faa > no_backup/biodata/hg19.ncbiRefSeq.chr1.fasta.gz 2>> no_backup/Logs/biodata/hg19chr1.log && cd - 2>> no_backup/Logs/biodata/hg19chr1.log && rm -rf $$tmp 2>> no_backup/Logs/biodata/hg19chr1.log

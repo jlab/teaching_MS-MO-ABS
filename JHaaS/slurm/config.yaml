@@ -1,0 +1,29 @@
+#cluster:
+#  sbatch
+#    --partition={resources.partition}
+#    --cpus-per-task={threads}
+#    --mem={resources.mem_mb}
+#    --job-name=smk-{rule}
+#    --output=log/slurm/{rule}-%j.out
+#    --parsable
+#    --export=ALL
+#cluster-cancel:
+#  scancel
+#cluster-status:
+#  scripts/status-sacct.sh
+default-resources:
+  - partition=bcf
+  - mem_mb=1000
+#  - time=168:00:00  # one week of walltime, currently to suppress snakemake warnings
+restart-times: 0
+max-jobs-per-second: 10
+max-status-checks-per-second: 1
+local-cores: 1
+latency-wait: 60
+jobs: 100
+printshellcmds: True
+#reason: True
+#scheduler: greedy
+use-conda: True
+executor: slurm
+keep-incomplete: True

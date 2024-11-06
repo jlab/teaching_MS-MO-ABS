@@ -1,7 +1,7 @@
 SHELL=/usr/bin/bash
-DATA=$$HOME/teaching_MS-MO-ABS/data/
+DATA=/Data
 
-test_unix: test_ex_unix_basic1 test_ex_unix_basic2 test_ex_unix_basic3 test_ex_unix_basic4 test_ex_unix_level2 test_ex_unix_fileformats test_lecture_unix
+all: test_ex_unix_basic1 test_ex_unix_basic2 test_ex_unix_basic3 test_ex_unix_basic4 test_ex_unix_level2 test_ex_unix_fileformats test_lecture_unix
 test_ex_unix_basic1:
 	@echo "hello world"
 	@date
@@ -67,15 +67,15 @@ test_ex_unix_fileformats:
 	# exercise: Linux - Bioinformatics file Formats
 	@ls -lah ${DATA}/Unix/hg19*
 	@wc ${DATA}/Unix/hg19*
-	@grep "^>" -c ${DATA}/Unix/hg19*.faa
-	@grep `grep "RPS8" ${DATA}/Unix/hg19_chr1_RefSeq_mapping.txt | cut -f 1` ${DATA}/Unix/hg19_chr1_RefSeq_genes.gtf  | grep exon -c
+	@zcat ${DATA}/Unix/hg19*.fasta.gz | grep "^>" -c
+	@zcat ${DATA}/Unix/hg19.ncbiRefSeq.gtf.gz | grep `zcat ${DATA}/Unix/hg19.ncbiRefSeq.chr1.mapping.txt.gz | grep "RPS8" | cut -f 1` | grep exon -c
 
-	@tail -n +2 ${DATA}/Unix/hg19_chr1_RefSeq_mapping.txt | cut -f 2 | sort -u | wc -l
-	@tail -n +2 ${DATA}/Unix/hg19_chr1_RefSeq_mapping.txt | sort -k2,2 | awk '{print $2}' | uniq | wc -l
-	@tail -n +2 ${DATA}/Unix/hg19_chr1_RefSeq_mapping.txt | awk '{print $2}' | sort | uniq | wc -l
+	@zcat ${DATA}/Unix/hg19.ncbiRefSeq.chr1.mapping.txt.gz | tail -n +2 | cut -f 2 | sort -u | wc -l
+	@zcat ${DATA}/Unix/hg19.ncbiRefSeq.chr1.mapping.txt.gz | tail -n +2 | sort -k2,2 | awk '{print $2}' | uniq | wc -l
+	@zcat ${DATA}/Unix/hg19.ncbiRefSeq.chr1.mapping.txt.gz | tail -n +2 | awk '{print $2}' | sort | uniq | wc -l
 
-	@sed -n '/NM_001012.1/,/>/p' ${DATA}/Unix/hg19_chr1_RefSeq_genes.faa | head -n -1
-	@awk 'BEGIN{RS=">";FS="\n"}NR>1 {if ($$1~/NM_001012.1/)print ">"$$0}' ${DATA}/Unix/hg19_chr1_RefSeq_genes.faa
+	@zcat ${DATA}/Unix/hg19.ncbiRefSeq.chr1.fasta.gz | sed -n '/NM_001012.1/,/>/p' | head -n -1
+	@zcat ${DATA}/Unix/hg19.ncbiRefSeq.chr1.fasta.gz | awk 'BEGIN{RS=">";FS="\n"}NR>1 {if ($$1~/NM_001012.1/)print ">"$$0}'
 
 	@which -a sort
 	@which -a uniq

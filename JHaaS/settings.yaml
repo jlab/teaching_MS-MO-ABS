@@ -2,26 +2,102 @@ nameprefix: msmoabs
 dir_dist: ./no_backup
 dir_logs: Logs
 dir_benchmarks: Benchmarks
-dir_refdata: BioData
+dir_refdata: biodata
+dir_samplesolutions: sample_solutions
 proxy: http://proxy.computational.bio.uni-giessen.de:3128
+podman:
+  tagprefix: jhaas_msmoabs
 downloads:
-  #~ - url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718832/SRR1718832
-    #~ target: RNA_Scr_V1.fq.gz
-    #~ target_dir: refdata
-    #~ md5: a7c79f1fbd98a7844a8a853b71778404
-    #~ type: sra
-  #~ - url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718833/SRR1718833
-    #~ target: RNA_Scr_V2.fq.gz
-    #~ target_dir: refdata
-    #~ md5: 8c5b7ffc140f6fae96b50c361bcfa65f
-    #~ type: sra
-  #~ - url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718836/SRR1718836
-    #~ target: RNA_Scr_T2.fq.gz
-    #~ target_dir: refdata
-    #~ md5: 88316f7ecbe9926203a079c2ce44e9fe
-    #~ type: sra
-  - url: https://sra-pub-run-odp.s3.amazonaws.com/sra/ERR12342748/ERR12342748
-    target: 13422.177skin.fq.gz
+  hg19.ncbiRefSeq.gtf.gz:  
+    url: https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/genes/hg19.ncbiRefSeq.gtf.gz
+    target_dir: refdata
+    md5: ccd53cf898616135c47c793c975cef39
+    type: wget
+    desc: "exercise unix, bioinformatic formats"
+  chr1.fa.gz:
+    url: http://hgdownload.soe.ucsc.edu/goldenPath/hg19/chromosomes/chr1.fa.gz
+    target_dir: refdata
+    md5: e103808b81f7d0a52353dee92d2ff164
+    type: wget
+    desc: "exercise unix, bioinformatic formats"
+
+
+#  SRA:
+  # this file is extra small for debugging
+  13422.177skin.fastq.gz:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/ERR12342748/ERR12342748
     target_dir: refdata
     md5: 6783474970c2e024ea155d0206d4e947
-    type: sra
+  # these files are for the RNA-seq exercises
+  RNA_Scr_V1.fastq.gz:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718832/SRR1718832
+    target_dir: refdata
+    md5: a7c79f1fbd98a7844a8a853b71778404
+  RNA_Scr_V2.fastq.gz:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718833/SRR1718833
+    target_dir: refdata
+    md5: 8c5b7ffc140f6fae96b50c361bcfa65f
+  RNA_Scr_V3.fastq.gz:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718834/SRR1718834
+    target_dir: refdata
+    md5: b7b9e9c3553916929f526866b0352390
+  RNA_Scr_T1.fastq.gz:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718835/SRR1718835
+    target_dir: refdata
+    md5: 71f8ac60a3b9927f1b5dad82e98cf0ff
+  RNA_Scr_T2.fastq.gz:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718836/SRR1718836
+    target_dir: refdata
+    md5: 88316f7ecbe9926203a079c2ce44e9fe
+  RNA_Scr_T3.fastq.gz:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718837/SRR1718837
+    target_dir: refdata
+    md5: 941fdbc7887fc44bd843086b888907cb
+  # these files are for the ChIP-seq exercises
+  p65_ChIP-seq_Vehicle_1.fastq.gz:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718824/SRR1718824
+    target_dir: refdata
+    md5: 08bd05bcb5b14d84647552be5343db1c
+  p65_ChIP-seq_Vehicle_2.fastq.gz:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718825/SRR1718825
+    target_dir: refdata
+    md5: 5a38c7ba5ae52bf221f7c5716ed41b54
+  p65_ChIP-seq_TNF_1.fastq.gz:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718826/SRR1718826
+    target_dir: refdata
+    md5: 236dba67a9221357216753cffde27678
+  p65_ChIP-seq_TNF_2.fastq.gz:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718827/SRR1718827
+    target_dir: refdata
+    md5: 7a44b42b7ee707cca93d2aa2486b3cc9
+  p65_Input_Vehicle.fastq.gz:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718828/SRR1718828
+    target_dir: refdata
+    md5: 7a5fa8a06757e5823ef5ee7a53d9f2b7
+  p65_Input_TNF.fastq.gz:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718829/SRR1718829
+    target_dir: refdata
+    md5: f76c8e7ba6701b9a04e20c26492d88d2
+#  SRA_PE:
+  SRR3923550:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR3923550/SRR3923550
+    target_dir: samplesolutions
+    md5_r1: e317b50dec7456a969e655374f664d39
+    md5_r2: 15e5efc669f3a02e0ba368a5c6a6c391
+#  wget:
+  hg19.zip:
+    url: https://genome-idx.s3.amazonaws.com/bt/hg19.zip
+    target_dir: refdata
+    md5: ce66e70b2bae64968f3fffd7011ab696
+    type: wget
+  hg19_genome.tar.gz:
+    url: https://genome-idx.s3.amazonaws.com/hisat/hg19_genome.tar.gz
+    target_dir: refdata
+    md5: d15498682d89781714e0890a917e6ada
+    type: wget
+  chr21.fa.gz:
+    url: http://hgdownload.soe.ucsc.edu/goldenPath/hg19/chromosomes/chr21.fa.gz
+    target_dir: refdata
+    md5: 26cdd5a3a539b63930752604feb2912b
+    type: wget
+

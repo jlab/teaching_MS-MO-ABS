@@ -1,0 +1,13 @@
+Name	Studiengang	Semester
+Michael	Bio	1
+Lisa	Chem	1
+Patrick	Chem	3
+Mai	Bio	3
+Mateo	Chem	5
+Lucas	Bio	5
+Tabea	Bio	5
+Jamila	Chem	5
+Marek	Chem	3
+Jochen	Bio	2
+Miriam	Chem	2
+Babette	Bio	4

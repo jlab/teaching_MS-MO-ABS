@@ -1,17 +1,17 @@
-rule hg19chr1:
+rule ex_unix_BioinfFileformats:
   input:
-    gtf="%s/{targetdir}/wget/hg19.ncbiRefSeq.gtf.gz" % (relpath(config['dir_dist'])),
-    fasta="%s/{targetdir}/wget/chr1.fa.gz" % (relpath(config['dir_dist']))
+    gtf="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.gtf.gz",
+    fasta="{targetdir}/Generated/Unix/chr1.fa.gz"
   output:
-    bed="%s/{targetdir}/Unix/hg19.ncbiRefSeq.chr1.bed.gz" % (relpath(config['dir_dist'])),
-    mapping="%s/{targetdir}/Unix/hg19.ncbiRefSeq.chr1.mapping.txt.gz" % (relpath(config['dir_dist'])),
-    fasta="%s/{targetdir}/Unix/hg19.ncbiRefSeq.chr1.fasta.gz" % (relpath(config['dir_dist']))
+    bed="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.chr1.bed.gz",
+    mapping="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.chr1.mapping.txt.gz",
+    fasta="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.chr1.fasta.gz"
   log:
-    bed="%s/%s/{targetdir}/Unix/hg19chr1.bed.log" % (relpath(config['dir_dist']), config['dir_logs']),
-    mapping="%s/%s/{targetdir}/Unix/hg19chr1.mapping.log" % (relpath(config['dir_dist']), config['dir_logs']),
-    fasta="%s/%s/{targetdir}/Unix/hg19chr1.fasta.log" % (relpath(config['dir_dist']), config['dir_logs']),
+    bed="{targetdir}/Logs/Unix/hg19chr1.bed.log",
+    mapping="{targetdir}/Logs/Unix/hg19chr1.mapping.log",
+    fasta="{targetdir}/Logs/Unix/hg19chr1.fasta.log",
   benchmark:
-    "%s/%s/{targetdir}/Unix/hg19chr1.benchmark" % (relpath(config['dir_dist']), config['dir_benchmarks'])
+    "{targetdir}/Benchmarks/Unix/hg19chr1.benchmark"
   conda:
     "env_unix.yaml"
   threads:
@@ -28,3 +28,47 @@ rule hg19chr1:
     ' && gzip tmp.faa -c > $pwd/{output.fasta} 2>> $pwd/{log.fasta}'
     ' && cd $pwd 2>> $pwd/{log.fasta}'
     ' && rm -rf $tmp 2>> $pwd/{log.fasta}'
+
+files = ['awk.txt', 'students.txt', 'users.txt']
+rule files_unix:
+  input:
+    ["../data/Unix/%s" % f for f in files]
+  output:
+    ["%s/Generated/Unix/%s" % (relpath(config['dir_dist']), f) for f in files]
+  log:
+    "%s/Logs/Unix/files_unix.log" % relpath(config['dir_dist'])
+  shell:
+    'srcs=({input}) 2> {log}'
+    ' && trgs=({output}) 2>> {log}'
+    ' && for i in "${{!srcs[@]}}"; do '
+    ' cp -v "${{srcs[i]}}" "${{trgs[i]}}" 2>> {log};'
+    ' done'
+
+rule exec_tests_unix:
+  input:
+    rules.build_image.output,
+    script='Unix/unix.tests.make',
+    docker='Unix/unix.tests.dockerfile'
+  output:
+    "%s/Testres/unix.txt" % relpath(config['dir_dist'])
+  log:
+    "%s/Logs/container_tests/unix.log" % relpath(config['dir_dist'])
+  benchmark:
+    "%s/Benchmarks/container_tests/unix.benchmark" % relpath(config['dir_dist'])
+  params:
+    context=join(relpath(config['dir_dist']), 'podman_unix'),
+    proxy=lambda wildcards: config['proxy'],
+    mount=join(config['dir_dist'], 'Generated'),
+    tag=config['podman']['tagprefix']
+  shell:
+    'mkdir -p {params.context} 2> {log}'
+    ' && cp {input.script} {params.context}/ 2>> {log}'
+    ' && podman build {params.context}/ -f {input.docker} -t {params.tag}_tests_unix --format=docker --build-arg http_proxy="{params.proxy}" --build-arg https_proxy="{params.proxy}" --build-arg ftp_proxy="{params.proxy}" 2>> {log} > {output}'
+    ' && podman run -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag}_tests_unix make 2>> {log} >> {output}'
+    ' && echo "passed" >> {output} 2>> {log}'
+
+rule unix:
+  input:
+    rules.files_unix.output,
+    '%s/Generated/Unix/hg19.ncbiRefSeq.chr1.bed.gz' % relpath(config['dir_dist']),
+    rules.exec_tests_unix.output

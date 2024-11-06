@@ -1,7 +1,0 @@
-name: build
-channels:
-  - conda-forge
-  - bioconda
-dependencies:
-  - snakemake
-  - sra-tools
