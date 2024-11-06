@@ -47,8 +47,8 @@ rule files_unix:
 rule exec_tests_unix:
   input:
     rules.build_image.output,
+    rules.files_unix.output,
     script='Unix/unix.tests.make',
-    docker='Unix/unix.tests.dockerfile'
   output:
     "%s/Testres/unix.txt" % relpath(config['dir_dist'])
   log:
@@ -56,16 +56,13 @@ rule exec_tests_unix:
   benchmark:
     "%s/Benchmarks/container_tests/unix.benchmark" % relpath(config['dir_dist'])
   params:
-    context=join(relpath(config['dir_dist']), 'podman_unix'),
     proxy=lambda wildcards: config['proxy'],
     mount=join(config['dir_dist'], 'Generated'),
     tag=config['podman']['tagprefix']
   shell:
-    'mkdir -p {params.context} 2> {log}'
-    ' && cp {input.script} {params.context}/ 2>> {log}'
-    ' && podman build {params.context}/ -f {input.docker} -t {params.tag}_tests_unix --format=docker --build-arg http_proxy="{params.proxy}" --build-arg https_proxy="{params.proxy}" --build-arg ftp_proxy="{params.proxy}" 2>> {log} > {output}'
-    ' && podman run -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag}_tests_unix make 2>> {log} >> {output}'
-    ' && echo "passed" >> {output} 2>> {log}'
+    'podman run -v ./{input.script}:/home/jovyan/makefile -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag} /bin/bash -c "make" 2>> {log} >> {output}'
+    ' && echo "=====passed=====" >> {output} 2>> {log}'
+    ' && date >> {output} 2>> {log}'
 
 rule unix:
   input:

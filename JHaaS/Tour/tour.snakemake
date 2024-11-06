@@ -1,34 +1,3 @@
-#rule ex_unix_BioinfFileformats:
-#  input:
-#    gtf="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.gtf.gz",
-#    fasta="{targetdir}/Generated/Unix/chr1.fa.gz"
-#  output:
-#    bed="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.chr1.bed.gz",
-#    mapping="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.chr1.mapping.txt.gz",
-#    fasta="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.chr1.fasta.gz"
-#  log:
-#    bed="{targetdir}/Logs/Unix/hg19chr1.bed.log",
-#    mapping="{targetdir}/Logs/Unix/hg19chr1.mapping.log",
-#    fasta="{targetdir}/Logs/Unix/hg19chr1.fasta.log",
-#  benchmark:
-#    "{targetdir}/Benchmarks/Unix/hg19chr1.benchmark"
-#  conda:
-#    "env_unix.yaml"
-#  threads:
-#    1
-#  shell:
-#    'zcat {input.gtf} | grep -P "^chr1\t" | gtf2bed | gzip -c > {output.bed} 2> {log.bed}'
-#    ' && zcat {output.bed} | awk \'BEGIN{{FS="\t"}}{{if ($8~/transcript/)print $10}}\' | awk \'NR==1 {{print "#name","name2"}}BEGIN{{FS="\\""}}{{print $4"\t"$2}}\' | gzip -c > {output.mapping} 2> {log.mapping}'
-#    ' && pwd=`pwd` 2> {log.fasta}'
-#    ' && tmp=`mktemp -d` 2>> {log.fasta}'
-#    ' && zcat {input.fasta} > $tmp/fasta 2>> {log.fasta}'
-#    ' && zcat {output.bed} | grep -P "\ttranscript\t" 2>> {log.fasta} > $tmp/bed'
-#    ' && cd $tmp 2>> $pwd/{log.fasta}'
-#    ' && bedtools getfasta -fi fasta -bed bed -name > tmp.faa 2>> $pwd/{log.fasta}'
-#    ' && gzip tmp.faa -c > $pwd/{output.fasta} 2>> $pwd/{log.fasta}'
-#    ' && cd $pwd 2>> $pwd/{log.fasta}'
-#    ' && rm -rf $tmp 2>> $pwd/{log.fasta}'
-
 files = ['pop_bioinf_software.xlsx', 'conda.dls.cache', 'meiers.txt',
          'meiers.fasta', 'meiers.msa', 'meierhistory.txt',
          'NC_000913.3_Escherichia_coli_K-12.fasta.gz', 
@@ -72,8 +41,8 @@ rule exec_tests_tour:
   input:
     rules.build_image.output,
     rules.file_notebook.output,
-    script='Tour/tour.tests.make',
-    docker='Tour/tour.tests.dockerfile'
+    rules.files_tour.output,
+    script='Tour/tour.tests.make'
   output:
     "%s/Testres/tour.txt" % relpath(config['dir_dist'])
   log:
@@ -81,16 +50,13 @@ rule exec_tests_tour:
   benchmark:
     "%s/Benchmarks/container_tests/tour.benchmark" % relpath(config['dir_dist'])
   params:
-    context=join(relpath(config['dir_dist']), 'podman_tour'),
     proxy=lambda wildcards: config['proxy'],
     mount=join(config['dir_dist'], 'Generated'),
     tag=config['podman']['tagprefix']
   shell:
-    'mkdir -p {params.context} 2> {log}'
-    ' && cp {input.script} {params.context}/ 2>> {log}'
-    ' && podman build {params.context}/ -f {input.docker} -t {params.tag}_tests_tour --format=docker --build-arg http_proxy="{params.proxy}" --build-arg https_proxy="{params.proxy}" --build-arg ftp_proxy="{params.proxy}" 2>> {log} > {output}'
-    ' && podman run -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag}_tests_tour /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh; conda activate bioinftour; make" 2>> {log} >> {output}'
-    ' && echo "passed" >> {output} 2>> {log}'
+    'podman run -v ./{input.script}:/home/jovyan/makefile -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag} /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh; conda activate bioinftour; make" 2>> {log} >> {output}'
+    ' && echo "=====passed=====" >> {output} 2>> {log}'
+    ' && date >> {output} 2>> {log}'
 
 rule tour:
   input:
