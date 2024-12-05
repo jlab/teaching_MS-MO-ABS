@@ -1,0 +1,10 @@
+name: ngs
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - sra-tools
+  - fastqc
+  - bowtie2
+  - samtools
+  - bcftools

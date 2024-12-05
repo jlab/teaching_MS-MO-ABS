@@ -1,0 +1,5 @@
+images/keyboard_*.png
+.ipynb_checkpoints
+
+JHaaS/no_backup/
+JHaaS/.snakemake/
