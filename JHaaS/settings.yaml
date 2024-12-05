@@ -10,17 +10,30 @@ podman:
 downloads:
   hg19.ncbiRefSeq.gtf.gz:  
     url: https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/genes/hg19.ncbiRefSeq.gtf.gz
-    target_dir: refdata
     md5: ccd53cf898616135c47c793c975cef39
     type: wget
     desc: "exercise unix, bioinformatic formats"
   chr1.fa.gz:
     url: http://hgdownload.soe.ucsc.edu/goldenPath/hg19/chromosomes/chr1.fa.gz
-    target_dir: refdata
     md5: e103808b81f7d0a52353dee92d2ff164
     type: wget
     desc: "exercise unix, bioinformatic formats"
-
+  SRR3923550:
+    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR3923550/SRR3923550
+    md5_r1: e317b50dec7456a969e655374f664d39
+    md5_r2: 15e5efc669f3a02e0ba368a5c6a6c391
+    type: SRA_PE
+    desc: "NGS exercise"
+  chr9.fa.gz:
+    url: http://hgdownload.soe.ucsc.edu/goldenPath/hg19/chromosomes/chr9.fa.gz
+    md5: cfef5926429a288174197e40c5e3c190
+    type: wget
+    desc: "exercise NGS, create FM index"
+  hg19.zip:
+    url: https://genome-idx.s3.amazonaws.com/bt/hg19.zip
+    md5: ce66e70b2bae64968f3fffd7011ab696
+    type: wget
+    desc: "exercise NGS, align"
 
 #  SRA:
   # this file is extra small for debugging
@@ -78,18 +91,7 @@ downloads:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718829/SRR1718829
     target_dir: refdata
     md5: f76c8e7ba6701b9a04e20c26492d88d2
-#  SRA_PE:
-  SRR3923550:
-    url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR3923550/SRR3923550
-    target_dir: samplesolutions
-    md5_r1: e317b50dec7456a969e655374f664d39
-    md5_r2: 15e5efc669f3a02e0ba368a5c6a6c391
 #  wget:
-  hg19.zip:
-    url: https://genome-idx.s3.amazonaws.com/bt/hg19.zip
-    target_dir: refdata
-    md5: ce66e70b2bae64968f3fffd7011ab696
-    type: wget
   hg19_genome.tar.gz:
     url: https://genome-idx.s3.amazonaws.com/hisat/hg19_genome.tar.gz
     target_dir: refdata
