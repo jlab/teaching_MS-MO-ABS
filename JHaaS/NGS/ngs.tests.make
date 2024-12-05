@@ -2,7 +2,7 @@ SHELL=/usr/bin/bash
 DATA=/Data
 THREADS=2
 
-all: test_ngs_fastqc test_ngs_fmindex SRR3923550_head.sam test_ngs_samtools
+all: test_ngs_fastqc test_ngs_fmindex SRR3923550_head.sam test_ngs_samtools test_ngs_sra
 test_ngs_fastqc:
 	bzcat $(DATA)/NGS/SRR3923550_1.fastq.bz2 | head -n 400 > tmp.fastq
 	fastqc tmp.fastq
@@ -26,3 +26,7 @@ test_ngs_samtools: SRR3923550_head.sam
 	@echo -e ">chr21\nAUCGAUCGU" > chr9.fa
 	@samtools mpileup SRR3923550_sorted.bam
 	@bcftools mpileup --no-reference SRR3923550_sorted.bam
+
+test_ngs_sra:
+	@fasterq-dump -p ERR12342748
+	@cat ERR12342748.fastq | bzip2 -k --fast -c > ERR12342748.fastq.bz2
