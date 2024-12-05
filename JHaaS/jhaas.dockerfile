@@ -53,6 +53,11 @@ RUN sed -e "s/import dask.dataframe as dd/import dask.dataframe as dd\nfrom dask
 COPY env_ngs.yaml env_ngs.yaml
 RUN mamba env create --yes --name ${CE_NGS} --file env_ngs.yaml 
 
+# install Venn diagram lib and statannot lib for python lecture in the conda base environment
+SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
+RUN conda install --yes -c conda-forge matplotlib-venn statannotations
+
+
 ### PREPARE DATA FOR STUDENTS
 ##RUN mkdir ${DIR_REFERENCES}
 ### Copy the hg19 bowtie2 index (~7.3 GB data) into the container to save bandwidth and time
@@ -69,9 +74,6 @@ RUN mamba env create --yes --name ${CE_NGS} --file env_ngs.yaml
 ##
 #RUN git clone -b ${BRANCH} https://github.com/jlab/teaching_MS-MO-ABS.git
 
-# install Venn diagram lib for python lecture in the conda base environment
-#SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
-#RUN conda install --yes -c conda-forge matplotlib-venn
 
 ### IFF created during make, copy trimmed, sorted bam files for RNAseq into container
 ##COPY foo BuildCache/RNA-seq_shScr_*.bam ${DIR_REFERENCES}/
