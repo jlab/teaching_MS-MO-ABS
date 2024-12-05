@@ -10,6 +10,7 @@ RUN apt-get -y install bc bsdmainutils time
 
 # variables for docker file
 ARG CE_TOUR=bioinftour
+ARG CE_NGS=ngs
 ARG CE_RNASEQ=rnaseq
 ARG BRANCH=exercises
 
@@ -49,8 +50,8 @@ RUN ln -s /opt/conda/envs/${CE_TOUR}/bin/cd-hit /opt/conda/envs/${CE_TOUR}/bin/c
 RUN sed -e "s/import dask.dataframe as dd/import dask.dataframe as dd\nfrom dask import config as dask_config\ndask_config.set({\"dataframe.convert-string\": False})/" -i /opt/conda/envs/${CE_TOUR}/lib/python*/site-packages/condastats/cli.py
 
 # create conda environment for RNAseq analyes
-#COPY env_rnaseq.yaml env_rnaseq.yaml
-#RUN mamba env create --yes --name ${CE_RNASEQ} --file env_rnaseq.yaml 
+COPY env_ngs.yaml env_ngs.yaml
+RUN mamba env create --yes --name ${CE_NGS} --file env_ngs.yaml 
 
 ### PREPARE DATA FOR STUDENTS
 ##RUN mkdir ${DIR_REFERENCES}
