@@ -1,0 +1,40 @@
+files = ['../rnaseq_normalizations.ipynb']
+rule files_rnaseq:
+  input:
+    ["%s" % f for f in files]
+  output:
+    ["%s/Generated/RNAseq/%s" % (relpath(config['dir_dist']), os.path.basename(f)) for f in files]
+  log:
+    "%s/Logs/RNAseq/files_rnaseq.log" % relpath(config['dir_dist'])
+  shell:
+    'srcs=({input}) 2> {log}'
+    ' && trgs=({output}) 2>> {log}'
+    ' && for i in "${{!srcs[@]}}"; do '
+    ' cp -v "${{srcs[i]}}" "${{trgs[i]}}" 2>> {log};'
+    ' done'
+
+rule exec_tests_rnaseq:
+  input:
+    rules.build_image.output,
+    rules.files_rnaseq.output,
+    script='RNAseq/rnaseq.tests.make'
+  output:
+    "%s/Testres/rnaseq.txt" % relpath(config['dir_dist'])
+  log:
+    "%s/Logs/container_tests/rnaseq.log" % relpath(config['dir_dist'])
+  benchmark:
+    "%s/Benchmarks/container_tests/rnaseq.benchmark" % relpath(config['dir_dist'])
+  params:
+    proxy=lambda wildcards: config['proxy'],
+    mount=join(config['dir_dist'], 'Generated'),
+    tag=config['podman']['tagprefix']
+  shell:
+    'podman run -v ./{input.script}:/home/jovyan/makefile -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag} /bin/bash -c "make" 2>> {log} >> {output}'
+    ' && echo "=====passed=====" >> {output} 2>> {log}'
+    ' && date >> {output} 2>> {log}'
+
+
+rule rnaseq:
+  input:
+    rules.files_rnaseq.output,
+    rules.exec_tests_rnaseq.output

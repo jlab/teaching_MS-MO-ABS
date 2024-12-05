@@ -1,7 +1,7 @@
 from os.path import join, abspath, relpath, dirname
 
 configfile: 'settings.yaml'
-localrules: build_image, exec_tests_unix, exec_tests_tour, exec_tests_ngs, exec_tests_python, file_notebook
+localrules: build_image, exec_tests_unix, exec_tests_tour, exec_tests_ngs, exec_tests_python, exec_tests_rnaseq, file_notebook
 
 #def get_proxy_calls():
 #  if 'proxy' in config.keys():
@@ -101,6 +101,7 @@ include: "Genomics/genomics.snakemake"
 include: "Tour/tour.snakemake"
 include: "NGS/ngs.snakemake"
 include: "Python/python.snakemake"
+include: "RNAseq/rnaseq.snakemake"
 
 #~ rule all:
   #~ input:
