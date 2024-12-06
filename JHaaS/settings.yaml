@@ -12,7 +12,7 @@ downloads:
     url: https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/genes/hg19.ncbiRefSeq.gtf.gz
     md5: ccd53cf898616135c47c793c975cef39
     type: wget
-    desc: "exercise unix, bioinformatic formats"
+    desc: "exercise unix, bioinformatic formats AND RNAseq HiSat2"
   chr1.fa.gz:
     url: http://hgdownload.soe.ucsc.edu/goldenPath/hg19/chromosomes/chr1.fa.gz
     md5: e103808b81f7d0a52353dee92d2ff164
@@ -44,28 +44,34 @@ downloads:
   # these files are for the RNA-seq exercises
   RNA_Scr_V1.fastq.gz:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718832/SRR1718832
-    target_dir: refdata
     md5: a7c79f1fbd98a7844a8a853b71778404
+    type: SRA_SE
+    desc: "one of the six samples for RNAseq"
   RNA_Scr_V2.fastq.gz:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718833/SRR1718833
-    target_dir: refdata
     md5: 8c5b7ffc140f6fae96b50c361bcfa65f
+    type: SRA_SE
+    desc: "one of the six samples for RNAseq"
   RNA_Scr_V3.fastq.gz:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718834/SRR1718834
-    target_dir: refdata
     md5: b7b9e9c3553916929f526866b0352390
+    type: SRA_SE
+    desc: "one of the six samples for RNAseq"
   RNA_Scr_T1.fastq.gz:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718835/SRR1718835
-    target_dir: refdata
     md5: 71f8ac60a3b9927f1b5dad82e98cf0ff
+    type: SRA_SE
+    desc: "one of the six samples for RNAseq"
   RNA_Scr_T2.fastq.gz:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718836/SRR1718836
-    target_dir: refdata
     md5: 88316f7ecbe9926203a079c2ce44e9fe
+    type: SRA_SE
+    desc: "one of the six samples for RNAseq"
   RNA_Scr_T3.fastq.gz:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718837/SRR1718837
-    target_dir: refdata
     md5: 941fdbc7887fc44bd843086b888907cb
+    type: SRA_SE
+    desc: "one of the six samples for RNAseq"
   # these files are for the ChIP-seq exercises
   p65_ChIP-seq_Vehicle_1.fastq.gz:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718824/SRR1718824
@@ -94,9 +100,9 @@ downloads:
 #  wget:
   hg19_genome.tar.gz:
     url: https://genome-idx.s3.amazonaws.com/hisat/hg19_genome.tar.gz
-    target_dir: refdata
     md5: d15498682d89781714e0890a917e6ada
     type: wget
+    desc: "HiSat2 index for hg19"
   chr21.fa.gz:
     url: http://hgdownload.soe.ucsc.edu/goldenPath/hg19/chromosomes/chr21.fa.gz
     target_dir: refdata
