@@ -75,28 +75,34 @@ downloads:
   # these files are for the ChIP-seq exercises
   p65_ChIP-seq_Vehicle_1.fastq.gz:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718824/SRR1718824
-    target_dir: refdata
     md5: 08bd05bcb5b14d84647552be5343db1c
+    type: SRA_SE
+    desc: "one of the six samples for peak calling"
   p65_ChIP-seq_Vehicle_2.fastq.gz:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718825/SRR1718825
-    target_dir: refdata
     md5: 5a38c7ba5ae52bf221f7c5716ed41b54
+    type: SRA_SE
+    desc: "one of the six samples for peak calling"
   p65_ChIP-seq_TNF_1.fastq.gz:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718826/SRR1718826
-    target_dir: refdata
     md5: 236dba67a9221357216753cffde27678
+    type: SRA_SE
+    desc: "one of the six samples for peak calling"
   p65_ChIP-seq_TNF_2.fastq.gz:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718827/SRR1718827
-    target_dir: refdata
     md5: 7a44b42b7ee707cca93d2aa2486b3cc9
+    type: SRA_SE
+    desc: "one of the six samples for peak calling"
   p65_Input_Vehicle.fastq.gz:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718828/SRR1718828
-    target_dir: refdata
     md5: 7a5fa8a06757e5823ef5ee7a53d9f2b7
+    type: SRA_SE
+    desc: "one of the six samples for peak calling"
   p65_Input_TNF.fastq.gz:
     url: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1718829/SRR1718829
-    target_dir: refdata
     md5: f76c8e7ba6701b9a04e20c26492d88d2
+    type: SRA_SE
+    desc: "one of the six samples for peak calling"
 #  wget:
   hg19_genome.tar.gz:
     url: https://genome-idx.s3.amazonaws.com/hisat/hg19_genome.tar.gz
