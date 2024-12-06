@@ -1,7 +1,7 @@
 name: tour
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
 dependencies:
   - mafft
   - hmmer
