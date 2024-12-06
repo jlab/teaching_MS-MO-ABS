@@ -49,14 +49,17 @@ RUN ln -s /opt/conda/envs/${CE_TOUR}/bin/cd-hit /opt/conda/envs/${CE_TOUR}/bin/c
 # fix a bug in pandas / dask / pyarrow
 RUN sed -e "s/import dask.dataframe as dd/import dask.dataframe as dd\nfrom dask import config as dask_config\ndask_config.set({\"dataframe.convert-string\": False})/" -i /opt/conda/envs/${CE_TOUR}/lib/python*/site-packages/condastats/cli.py
 
-# create conda environment for RNAseq analyes
+# create conda environment for NGS analyes
 COPY env_ngs.yaml env_ngs.yaml
 RUN mamba env create --yes --name ${CE_NGS} --file env_ngs.yaml 
 
 # install Venn diagram lib and statannot lib for python lecture in the conda base environment
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
-RUN conda install --yes -c conda-forge matplotlib-venn statannotations
+RUN mamba install --yes -c conda-forge matplotlib-venn statannotations
 
+# create conda environment for RNAseq analyes
+COPY env_rnaseq.yaml env_rnaseq.yaml
+RUN mamba env create --yes --name ${CE_RNASEQ} --file env_rnaseq.yaml
 
 ### PREPARE DATA FOR STUDENTS
 ##RUN mkdir ${DIR_REFERENCES}
