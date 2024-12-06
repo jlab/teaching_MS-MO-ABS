@@ -19,7 +19,7 @@ localrules: build_image, exec_tests_unix, exec_tests_tour, exec_tests_ngs, exec_
 rule build_image:
   input:
     env_tour='Tour/env_tour.yaml',
-    env_rnaseq='Envs/env_rnaseq.yaml',
+    env_rnaseq='RNAseq/env_rnaseq.yaml',
     env_ngs='NGS/env_ngs.yaml',
     docker='jhaas.dockerfile'
   output:
@@ -95,6 +95,35 @@ rule download_sra_PE:
     ' && cat $tmp/*_2.fastq | bzip2 -k -9 -c > {output.r2} 2>> {log}'
     ' && rm -rf $tmp 2>> {log}'
 
+rule download_sra_SE:
+  output:
+    "{targetdir}/Generated/{topic}/{file}"
+  log:
+    "{targetdir}/Logs/{topic}/{file}.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/{file}.benchmark"
+  wildcard_constraints:
+    file='|'.join([name for name, item in config['downloads'].items() if 'type' in item.keys() and item['type'] == 'SRA_SE'])
+  resources:
+    ntasks="2",
+    mem_mb="2000"
+  conda:
+    "Envs/env_download.yaml"
+  params:
+    url=lambda wildcards: config['downloads'][wildcards['file']]['url'],
+    md5=lambda wildcards: config['downloads'][wildcards['file']]['md5'],
+    proxy=lambda wildcards: config['proxy'],
+  shell:
+    'export http_proxy="{params.proxy}" 2> {log}'
+    ' && export https_proxy="{params.proxy}" 2>> {log}'
+    ' && export ftp_proxy="{params.proxy}" 2>> {log}'
+    ' && tmp=`mktemp -d` 2>> {log}'
+    ' && fasterq-dump -f {params.url} -F fastq --skip-technical -e {resources.ntasks} -p -O $tmp 2>> {log}'
+    ' && md5sum -c <<<"{params.md5} `readlink -f $tmp/*.fastq`" 2>> {log} 1>&2'
+    ' && cat $tmp/*.fastq | gzip -k -9 -c > {output} 2>> {log}'
+    ' && rm -rf $tmp 2>> {log}'
+
+
 
 include: "Unix/unix.snakemake"
 include: "Genomics/genomics.snakemake"
@@ -120,63 +149,3 @@ include: "RNAseq/rnaseq.snakemake"
   #~ shell:
     #~ 'mv {input.sra} {input.wget} {params.outdir} -v 2> {log}'
 
-rule download_sra:
-  output:
-    "%s/{targetdir}/SRA/{file}" % (relpath(config['dir_dist']))
-  log:
-    "%s/{targetdir}/%s/SRA/{file}.log" % (relpath(config['dir_dist']), config['dir_logs'])
-  benchmark:
-    "%s/{targetdir}/%s/SRA/{file}.benchmark" % (relpath(config['dir_dist']), config['dir_benchmarks'])
-  resources:
-    ntasks="2",
-    mem_mb="2000"
-  conda:
-    "Envs/env_download.yaml"
-  params:
-    url=lambda wildcards: config['downloads']['SRA'][wildcards['file']]['url'],
-    accession=lambda wildcards: config['downloads']['SRA'][wildcards['file']]['url'].split('/')[-1],
-    md5=lambda wildcards: config['downloads']['SRA'][wildcards['file']]['md5'],
-    proxy=lambda wildcards: config['proxy'],
-    outdir=lambda wildcards: relpath(join(config['dir_dist'], wildcards['targetdir']))
-  shell:
-    'export http_proxy="{params.proxy}" 2> {log}'
-    ' && export https_proxy="{params.proxy}" 2>> {log}'
-    ' && export ftp_proxy="{params.proxy}" 2>> {log}'
-    ' && mkdir -p `dirname {output}` 2>> {log}'
-    ' && fasterq-dump -f {params.url} -F fastq --skip-technical -e {resources.ntasks} -p -O {params.outdir} 2>> {log}'
-    ' && md5sum -c <<<"{params.md5} {params.outdir}/{params.accession}.fastq" 2>> {log} 1>&2'
-    ' && gzip {params.outdir}/{params.accession}.fastq -9 -c > {output} 2>> {log}'
-    ' && rm -f {params.outdir}/{params.accession}.fastq 2>> {log}'
-
-#rule download_sra_PE:
-#  output:
-#    #r1=lambda wildcards: "%s/%s/SRA_PE/{file}_1.fastq.bz2" % (relpath(config['dir_dist']), config['dir_%s' % config['downloads']['SRA_PE'][wildcards['file']]['target_dir']])
-#    r1="%s/{targetdir}/SRA_PE/{file}_1.fastq.bz2" % (relpath(config['dir_dist'])),
-#    r2="%s/{targetdir}/SRA_PE/{file}_2.fastq.bz2" % (relpath(config['dir_dist']))
-#  log:
-#    "%s/%s/{targetdir}/SRA_PE/{file}.log" % (relpath(config['dir_dist']), config['dir_logs'])
-#  benchmark:
-#    "%s/%s/{targetdir}/SRA_PE/{file}.benchmark" % (relpath(config['dir_dist']), config['dir_benchmarks'])
-#  resources:
-#    ntasks="2",
-#    mem_mb="2000"
-#  conda:
-#    "Envs/env_download.yaml"
-#  params:
-#    url=lambda wildcards: config['downloads']['SRA_PE'][wildcards['file']]['url'],
-#    accession=lambda wildcards: config['downloads']['SRA_PE'][wildcards['file']]['url'].split('/')[-1],
-#    md5r1=lambda wildcards: config['downloads']['SRA_PE'][wildcards['file']]['md5_r1'],
-#    md5r2=lambda wildcards: config['downloads']['SRA_PE'][wildcards['file']]['md5_r2'],
-#    proxy=lambda wildcards: config['proxy'],
-#    outdir=lambda wildcards: relpath(join(config['dir_dist'], wildcards['targetdir'], 'SRA_PE'))
-#  shell:
-#    'export http_proxy="{params.proxy}" 2> {log}'
-#    ' && export https_proxy="{params.proxy}" 2>> {log}'
-#    ' && export ftp_proxy="{params.proxy}" 2>> {log}'
-#    ' && mkdir -p `dirname {output}` 2>> {log}'
-#    ' && fasterq-dump -f {params.url} -F fastq --skip-technical -e {resources.ntasks} -p -O {params.outdir} 2>> {log}'
-#    ' && md5sum -c <<<"{params.md5r1} {params.outdir}/{params.accession}_1.fastq" 2>> {log} 1>&2'
-#    ' && md5sum -c <<<"{params.md5r2} {params.outdir}/{params.accession}_2.fastq" 2>> {log} 1>&2'
-#    ' && cat {params.outdir}/{params.accession}_1.fastq | bzip2 -k -9 -c > {output.r1} 2>> {log}'
-#    ' && cat {params.outdir}/{params.accession}_2.fastq | bzip2 -k -9 -c > {output.r2} 2>> {log}'
-#
