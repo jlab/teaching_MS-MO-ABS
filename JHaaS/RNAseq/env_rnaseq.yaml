@@ -1,0 +1,13 @@
+name: msmoabs_rnaseq
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - sra-tools
+  - fastqc
+  - multiqc
+  - hisat2
+  - bowtie2
+  - samtools
+  - trim-galore
+  - subread
