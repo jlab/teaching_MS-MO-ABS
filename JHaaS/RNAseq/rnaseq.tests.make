@@ -1,7 +1,12 @@
 SHELL=/usr/bin/bash
 DATA=/Data
 
-all: test_normalization_notebook test_rnaseq_trimgalore splicesites out.sam test_rnaseq_featurecounts
+all: test_normalization_notebook test_rnaseq_trimgalore splicesites out.sam test_rnaseq_featurecounts test_tpmrpkm_notebook
+
+test_tpmrpkm_notebook:
+	@jupyter nbconvert --to python ${DATA}/RNAseq/Normalization_solutions.ipynb --stdout > ~/Normalization_solutions.py
+	@ipython ~/Normalization_solutions.py
+
 
 test_normalization_notebook:
 	@jupyter nbconvert --to python ${DATA}/RNAseq/rnaseq_normalizations.ipynb --stdout > ~/rnaseq_normalizations.py
@@ -29,3 +34,7 @@ test_rnaseq_featurecounts: out.sam
 	@samtools index out.bam
 	@zcat ${DATA}/Unix/hg19.ncbiRefSeq.gtf.gz > annot
 	@featureCounts -a annot -M -O -T 2 -o featureCounts.tsv out.bam
+	
+test_dge:
+	@mkdir -p ~/dge/
+	@R --vanilla --file=${DATA}/RNAseq/deseq2.R --args --count-table ${DATA}/RNAseq/RNA_Scr_feature_counts.tsv --conditions ${DATA}/RNAseq/conditions.tsv --featcounts-log ${DATA}/RNAseq/RNA_Scr_feature_counts.tsv.summary --output ~/dge/
