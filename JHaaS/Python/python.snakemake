@@ -1,9 +1,9 @@
-files = ['../JHaaS/Python/python_intro.ipynb', 'MolecularWeight_tair7.tsv', 'TargetP_analysis_tair7.tsv']
+files = ['../JHaaS/Python/python_intro.ipynb', 'MolecularWeight_tair7.tsv', 'TargetP_analysis_tair7.tsv', "Python/Pandas_exercise.ipynb", "Python/Pandas_solutions.ipynb", "Python/Python_exercise.ipynb", "Python/Python_solutions.ipynb"]
 rule files_python:
   input:
     ["../data/%s" % f for f in files]
   output:
-    ["%s/Generated/Python/%s" % (relpath(config['dir_dist']), f) for f in files]
+    ["%s/Generated/Python/%s" % (relpath(config['dir_dist']), os.path.basename(f)) for f in files]
   log:
     "%s/Logs/Python/files_python.log" % relpath(config['dir_dist'])
   shell:
