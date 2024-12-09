@@ -12,6 +12,7 @@ RUN apt-get -y install bc bsdmainutils time
 ARG CE_TOUR=bioinftour
 ARG CE_NGS=ngs
 ARG CE_RNASEQ=rnaseq
+ARG CE_CHIPSEQ=chipseq
 ARG BRANCH=exercises
 
 ARG NB_UID=1000
@@ -61,26 +62,14 @@ RUN mamba install --yes -c conda-forge matplotlib-venn statannotations
 COPY env_rnaseq.yaml env_rnaseq.yaml
 RUN mamba env create --yes --name ${CE_RNASEQ} --file env_rnaseq.yaml
 
-### PREPARE DATA FOR STUDENTS
-##RUN mkdir ${DIR_REFERENCES}
-### Copy the hg19 bowtie2 index (~7.3 GB data) into the container to save bandwidth and time
-### If you use the make target 'jhaas', the files get downloaded through the make process and will be
-### copied into the container. If this pre-fetch was not executed, the RUN if statement resolves to true
-### and download of the files will happen from within the container
-##COPY foo BuildCache/hg19.*.bt2 ${DIR_REFERENCES}/
-##RUN  if [ ! -e ${DIR_REFERENCES}/hg19.1.bt2 ] ; then cd ${DIR_REFERENCES}; wget https://genome-idx.s3.amazonaws.com/bt/hg19.zip; unzip hg19.zip; fi
-##
-#### 2. six RNAseq example datasets
-##COPY samples_rnaseq.txt BuildCache/RNA-seq_shScr_*.fastq.gz ${DIR_REFERENCES}/
-##SHELL ["conda", "run", "-n", "rnaseq", "/bin/bash", "-c"]
-##RUN  if [ ! -e ${DIR_REFERENCES}/RNA-seq_shScr_TNF_1.fastq.gz ] ; then export IFS=$'\x0a' && for line in `cat samples_rnaseq.txt | grep -v "^#"`; do url=`echo $line | cut -f 3`; name=`echo $line | cut -f 2 | tr " " "_"`; wget "$url"; fasterq-dump ./`basename $url` -F fastq --skip-technical; gzip `basename $url`.fastq -9; mv `basename $url`.fastq.gz $name.fastq.gz; done; fi;
-##
-#RUN git clone -b ${BRANCH} https://github.com/jlab/teaching_MS-MO-ABS.git
+# create conda environment for DEseq2
+COPY env_dge.yaml env_dge.yaml
+RUN mamba env create --yes --name dge --file env_dge.yaml
 
+# create conda environment for ChIPseq analyes
+COPY env_chipseq.yaml env_chipseq.yaml
+RUN mamba env create --yes --name ${CE_CHIPSEQ} --file env_chipseq.yaml
 
-### IFF created during make, copy trimmed, sorted bam files for RNAseq into container
-##COPY foo BuildCache/RNA-seq_shScr_*.bam ${DIR_REFERENCES}/
-##
 ##SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
 ##COPY envs/msmoabs_macs2.yaml msmoabs_macs2.yaml
 ##RUN mamba env create --yes --name macs2 --file msmoabs_macs2.yaml 
