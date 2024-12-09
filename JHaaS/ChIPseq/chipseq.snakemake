@@ -1,0 +1,59 @@
+samples = ["p65_ChIP-seq_TNF_1", "p65_ChIP-seq_TNF_2", "p65_ChIP-seq_Vehicle_1", "p65_ChIP-seq_Vehicle_2", "p65_Input_TNF", "p65_Input_Vehicle"]
+
+rule chipseq_callpeak:
+  input:
+    fore="{targetdir}/Generated/{topic}/p65_ChIP-seq_{fore}_hisat2_unspliced.sorted.bam",
+    back="{targetdir}/Generated/{topic}/p65_Input_{back}_hisat2_unspliced.sorted.bam"
+  output:
+    peaks="{targetdir}/Generated/{topic}/callpeak/p65_{fore}-vs-{back}_peaks.xls",
+    ctrllambda="{targetdir}/Generated/{topic}/callpeak/p65_{fore}-vs-{back}_control_lambda.bdg",
+    r="{targetdir}/Generated/{topic}/callpeak/p65_{fore}-vs-{back}_model.r",
+    narrowPeak="{targetdir}/Generated/{topic}/callpeak/p65_{fore}-vs-{back}_peaks.narrowPeak",
+    bed="{targetdir}/Generated/{topic}/callpeak/p65_{fore}-vs-{back}_summits.bed",
+    bdg="{targetdir}/Generated/{topic}/callpeak/p65_{fore}-vs-{back}_treat_pileup.bdg",
+  log:
+    "{targetdir}/Logs/{topic}/callpeak/p65_{fore}-vs-{back}.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/callpeak/p65_{fore}-vs-{back}.benchmark"
+  conda:
+    "env_chipseq.yaml"
+  threads:
+    1
+  shell:
+    "macs2 callpeak -t {input.fore} -c {input.back} -n p65_{wildcards.fore}-vs-{wildcards.back} --outdir `dirname {output.peaks}` -f BAM -B -g hs 2> {log}"
+#    " && touch {output} 2>> {log}" 
+#rule exec_tests_rnaseq:
+#  input:
+#    rules.build_image.output,
+#    rules.files_rnaseq.output,
+#    script='RNAseq/rnaseq.tests.make'
+#  output:
+#    "%s/Testres/rnaseq.txt" % relpath(config['dir_dist'])
+#  log:
+#    "%s/Logs/container_tests/rnaseq.log" % relpath(config['dir_dist'])
+#  benchmark:
+#    "%s/Benchmarks/container_tests/rnaseq.benchmark" % relpath(config['dir_dist'])
+#  params:
+#    proxy=lambda wildcards: config['proxy'],
+#    mount=join(config['dir_dist'], 'Generated'),
+#    tag=config['podman']['tagprefix']
+#  shell:
+#    'podman run -v ./{input.script}:/home/jovyan/makefile -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag} /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh; conda activate rnaseq; make" 2>> {log} >> {output}'
+#    ' && echo "=====passed=====" >> {output} 2>> {log}'
+#    ' && date >> {output} 2>> {log}'
+#
+rule chipseq:
+  input:
+    ["%s/Generated/ChIPseq/%s_hisat2_unspliced.sorted.bam" % (relpath(config['dir_dist']), sample) for sample in samples],
+    "%s/Generated/ChIPseq/callpeak/p65_TNF_1-vs-TNF_peaks.xls" % relpath(config['dir_dist']), 
+    "%s/Generated/ChIPseq/callpeak/p65_TNF_2-vs-TNF_peaks.xls" % relpath(config['dir_dist']),
+    "%s/Generated/ChIPseq/callpeak/p65_Vehicle_1-vs-Vehicle_peaks.xls" % relpath(config['dir_dist']),
+    "%s/Generated/ChIPseq/callpeak/p65_Vehicle_2-vs-Vehicle_peaks.xls" % relpath(config['dir_dist']),
+
+    #mapping="{targetdir}/Generated/{topic}/{file}_hisat2{splice}.sorted.bam",
+#    rules.files_chipseq.output,
+#    "%s/Generated/RNAseq/multiQC" % relpath(config['dir_dist']),
+#    "%s/Generated/ChIPseq/multiQC_trimmed" % relpath(config['dir_dist']),
+#     "%s/Generated/ChIPseq/%s_trimmed_hisat2.sorted.bam" % (relpath(config['dir_dist']), samples[0])
+#    "%s/Generated/RNAseq/RNA_Scr_feature_counts.tsv" % relpath(config['dir_dist']),
+#    rules.exec_tests_rnaseq.output,
