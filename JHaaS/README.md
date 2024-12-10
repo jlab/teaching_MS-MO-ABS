@@ -22,8 +22,8 @@ You need to [install conda](https://docs.anaconda.com/miniconda/install/) first 
      - initialize: `conda init`
      - and restart your terminal: `source ~/.bashrc` first!
   5. clone this repository: `git clone https://github.com/jlab/teaching_MS-MO-ABS.git`
-  6. change into the subdirectory `JHaas` of your fresh repository copy: `cd teaching_MS-MO-ABS/JHaas`
+  6. change into the subdirectory `JHaaS` of your fresh repository copy: `cd teaching_MS-MO-ABS/JHaaS`
   7. trigger pipeline execution, i.e. create new conda environment, download and process all data and create podman image: `make build`
   8. test your new podman image, especially the availability of externally mounted data in the image directory `/Data/`: `make run`
 
-Ask Nils to serve your new podman image AND the data within the BCF's JHaaS.
+Ask Nils to serve your new podman image AND the data within the BCF's JHaaS. The directory, containing necessary files for the course, should have been created as the sub-directory `teaching_MS-MO-ABS/JHaaS/no_backup/Generated`. It currently - 2024-12-10 - contains 6.518 items, totalling in 76.6 GB.
