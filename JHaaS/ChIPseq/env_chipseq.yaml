@@ -4,3 +4,5 @@ channels:
   - bioconda
 dependencies:
   - macs2=2.2.9.1
+  - bedtools
+  - homer
