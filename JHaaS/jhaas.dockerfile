@@ -70,6 +70,8 @@ RUN mamba env create --yes --name dge --file env_dge.yaml
 COPY env_chipseq.yaml env_chipseq.yaml
 RUN mamba env create --yes --name ${CE_CHIPSEQ} --file env_chipseq.yaml
 
-##SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
-##COPY envs/msmoabs_macs2.yaml msmoabs_macs2.yaml
-##RUN mamba env create --yes --name macs2 --file msmoabs_macs2.yaml 
+# hack homer such that it uses the externally provided data directory
+SHELL ["conda", "run", "-n", "chipseq", "/bin/bash", "-c"]
+RUN cd $CONDA_PREFIX/share/homer && mv data old_data && ln -s /Data/ChIPseq/homer/data .
+RUN sed 's#^ORGANISMS#ORGANISMS\nhuman\tv7.0\tHomo sapiens (human) accession and ontology information\thttp://homer.ucsd.edu/homer/data/organisms/human.v7.0.zip\tdata/accession/\t9606,NCBI Gene#' -i $CONDA_PREFIX/share/homer/config.txt
+RUN sed 's#^GENOMES#GENOMES\nhg19\tv7.0\thuman genome and annotation for UCSC hg19\thttp://homer.ucsd.edu/homer/data/genomes/hg19.v7.0.zip\tdata/genomes/hg19/\thuman,default#' -i $CONDA_PREFIX/share/homer/config.txt
