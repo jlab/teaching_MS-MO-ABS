@@ -49,6 +49,7 @@ rule exec_tests_unix:
     rules.build_image.output,
     rules.files_unix.output,
     script='Unix/unix.tests.make',
+    hg19chr1="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.chr1.fasta.gz"
   output:
     "%s/Testres/unix.txt" % relpath(config['dir_dist'])
   log:
