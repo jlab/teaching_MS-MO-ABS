@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 CONDA=mamba
 SUBDIR_CONDA=Envs
 CONDA_ENVNAME=snakemake
@@ -11,23 +13,11 @@ DIR_REPO=/media/jlu/homes/sjanssen/Git/jlab/teaching_MS-MO-ABS/JHaaS
 #srun --mem=4G --pty bash
 
 build: ${PREFIX_DIR}/${SUBDIR_CONDA}/${CONDA_ENVNAME}
-	echo "Don't forget to set the proxy, if in BCF infrastructure!"
+	@if [ `env | grep -e proxy -c` -eq 0 ]; then echo "You probably forgot to set the proxy in our BCF infrastructure.\nIf not, remove line 14 if the makefile to avoid this test."; false; fi
+	condabin=`which conda`; dirconda=`dirname $$condabin`/../; source $$dirconda/etc/profile.d/conda.sh; conda activate ${PREFIX_DIR}/${SUBDIR_CONDA}/${CONDA_ENVNAME}; \
+	pwd=`readlink -f .`; snakemake --profile $$pwd/slurm/ -p all -n
 
 # create an initial conda environment to install snakemake
-${PREFIX_DIR}/${SUBDIR_CONDA}/${CONDA_ENVNAME}: Envs/env_${CONDA_ENVNAME}.yaml settings.yaml
-	if [ ! -d ${PREFIX_DIR}/${SUBDIR_CONDA}/${CONDA_ENVNAME} ]; then ${CONDA} env create -p "${PREFIX_DIR}/${SUBDIR_CONDA}/${CONDA_ENVNAME}" --file Envs/env_${CONDA_ENVNAME}.yaml; fi;
-
-##Envs/env_tour.yaml Envs/env_rnaseq.yaml
-#image_build_docker:
-#	mkdir -p no_backup/docker/Envs/
-#	cp ${DIR_REPO}/Envs/env_tour.yaml ${DIR_REPO}/Envs/env_rnaseq.yaml no_backup/docker/Envs/
-#	cp ${DIR_REPO}/jhaas.dockerfile .
-#	sudo docker build no_backup/docker/ -f jhaas.dockerfile -t jhaas_msmoabs
-#
-#image_test_docker: image_build_docker
-#	cp ${DIR_REPO}/jhaas_tests.dockerfile .
-#	cp ${DIR_REPO}/jhaas_tests.make ${DIR_REPO}/python_intro.ipynb no_backup/docker/
-#	sudo docker build no_backup/docker/ -f jhaas_tests.dockerfile -t jhaas_msmoabs_test
-#	#sudo docker build --no-cache no_backup/docker/ -f jhaas_tests.dockerfile -t jhaas_msmoabs_test
-##--cgroup-manager=cgroupfs 
-
+${PREFIX_DIR}/${SUBDIR_CONDA}/${CONDA_ENVNAME}: env_${CONDA_ENVNAME}.yaml settings.yaml
+	@if [ ! -d ${PREFIX_DIR}/${SUBDIR_CONDA}/${CONDA_ENVNAME} ]; then ${CONDA} env create -p "${PREFIX_DIR}/${SUBDIR_CONDA}/${CONDA_ENVNAME}" --file env_${CONDA_ENVNAME}.yaml; fi;
+	@echo "conda environment for snakemake has been created"
