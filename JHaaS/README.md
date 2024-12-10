@@ -27,3 +27,6 @@ You need to [install conda](https://docs.anaconda.com/miniconda/install/) first 
   8. test your new podman image, especially the availability of externally mounted data in the image directory `/Data/`: `make run`
 
 Ask Nils to serve your new podman image AND the data within the BCF's JHaaS. The directory, containing necessary files for the course, should have been created as the sub-directory `teaching_MS-MO-ABS/JHaaS/no_backup/Generated`. It currently - 2024-12-10 - contains 6.518 items, totalling in 76.6 GB.
+
+Resource requirenments for the image might be derived from snakemakes benchmark logging:
+![image](https://github.com/user-attachments/assets/dfc461be-10dd-45d8-b99f-dfdea757b0c7)
