@@ -21,39 +21,151 @@ rule chipseq_callpeak:
     1
   shell:
     "macs2 callpeak -t {input.fore} -c {input.back} -n p65_{wildcards.fore}-vs-{wildcards.back} --outdir `dirname {output.peaks}` -f BAM -B -g hs 2> {log}"
-#    " && touch {output} 2>> {log}" 
-#rule exec_tests_rnaseq:
-#  input:
-#    rules.build_image.output,
-#    rules.files_rnaseq.output,
-#    script='RNAseq/rnaseq.tests.make'
-#  output:
-#    "%s/Testres/rnaseq.txt" % relpath(config['dir_dist'])
-#  log:
-#    "%s/Logs/container_tests/rnaseq.log" % relpath(config['dir_dist'])
-#  benchmark:
-#    "%s/Benchmarks/container_tests/rnaseq.benchmark" % relpath(config['dir_dist'])
-#  params:
-#    proxy=lambda wildcards: config['proxy'],
-#    mount=join(config['dir_dist'], 'Generated'),
-#    tag=config['podman']['tagprefix']
-#  shell:
-#    'podman run -v ./{input.script}:/home/jovyan/makefile -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag} /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh; conda activate rnaseq; make" 2>> {log} >> {output}'
-#    ' && echo "=====passed=====" >> {output} 2>> {log}'
-#    ' && date >> {output} 2>> {log}'
-#
+
+rule chipseq_multiqc_report:
+  input:
+    ["{targetdir}/Generated/ChIPseq/%s_trimmed/" % sample for sample in samples],
+  output:
+    directory("{targetdir}/Generated/{topic}/multiQC_report")
+  log:
+    "{targetdir}/Logs/{topic}/multiqc_report.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/multiqc_report.benchmark"
+  conda:
+    "../RNAseq/env_rnaseq.yaml"
+  threads:
+    1
+  shell:
+    "mkdir -p {output} 2> {log}"
+    " && multiqc {input} --outdir {output} 2>> {log}"
+
+rule chipseq_plot_model:
+  input:
+    script="{targetdir}/Generated/{topic}/callpeak/p65_{fore}-vs-{back}_model.r",
+  output:
+    plots="{targetdir}/Generated/{topic}/callpeak/p65_{fore}-vs-{back}_model.pdf",
+  log:
+    "{targetdir}/Logs/{topic}/callpeak/p65_{fore}-vs-{back}_model.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/callpeak/p65_{fore}-vs-{back}_model.benchmark"
+  conda:
+    "env_chipseq.yaml"
+  threads:
+    1
+  shell:
+    "pwd=`pwd` 2> {log}"
+    " && cd `dirname {output}` 2>> $pwd/{log} && cat `basename {input}` | R --vanilla 2>> $pwd/{log}"
+
+rule chipseq_extract_bed:
+  input:
+    "{targetdir}/Generated/{topic}/callpeak/p65_{fore}-vs-{back}_peaks.narrowPeak",
+  output:
+    "{targetdir}/Generated/{topic}/peakinspection/p65_{fore}-vs-{back}_peaks.narrowPeak.bed",
+  log:
+    "{targetdir}/Logs/{topic}/peakinspection/extract_bed/p65_{fore}-vs-{back}_model.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/peakinspection/extract_bed/p65_{fore}-vs-{back}_model.benchmark"
+  threads:
+    1
+  shell:
+    "cut -f 1-3 {input} > {output} 2> {log}"
+
+rule chipseq_intersect_bed:
+  input:
+    rep1="{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_1-vs-{fore}_peaks.narrowPeak.bed",
+    rep2="{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_2-vs-{fore}_peaks.narrowPeak.bed",
+  output:
+    "{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_intersect.bed",
+  log:
+    "{targetdir}/Logs/{topic}/peakinspection/intersect_bed.p65_{fore}_model.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/peakinspection/intersect_bed.p65_{fore}_model.benchmark"
+  conda:
+    "env_chipseq.yaml"
+  threads:
+    1
+  shell:
+    "bedtools intersect -a {input.rep1} -b {input.rep2} -f 0.50 -r > {output} 2> {log}"
+
+rule chipseq_intersect_top:
+  input:
+    "{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_intersect.bed",
+  output:
+    "{targetdir}/Generated/{topic}/peakinspection/p65_{fore}-top{number}_intersect.bed",
+  log:
+    "{targetdir}/Logs/{topic}/peakinspection/intersect_top{number}.p65_{fore}_model.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/peakinspection/intersect_top{number}.p65_{fore}_model.benchmark"
+  threads:
+    1
+  shell:
+    "cat {input} | sort -k 7,7nr | head -n {wildcards.number} > {output} 2> {log} || true"  # I am kind of desparate, since I don't understand why this pipe fails. Results are present and correct?!
+
+rule chipseq_prepareHomer:
+  output:
+    directory("{targetdir}/Generated/{topic}/homer/data"),
+  log:
+    "{targetdir}/Logs/{topic}/homer/prepare.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/homer/prepare.benchmark"
+  threads:
+    1
+  conda:
+    "env_chipseq.yaml"
+  params:
+    proxy=lambda wildcards: config['proxy'],
+  shell:
+    "if [ \"{params.proxy}\" != \"\" ]; then export http_proxy={params.proxy} 2> {log}"
+    " && export https_proxy={params.proxy} 2>> {log}"
+    " && export ftp_proxy={params.proxy} 2>> {log}; fi"
+    " && perl $CONDA_PREFIX/share/homer/configureHomer.pl -install hg19 2>> {log}"
+    " && cp -r -v $CONDA_PREFIX/share/homer/data {output} 2>> {log}"
+
+rule chipseq_homer:
+  input:
+    data="{targetdir}/Generated/{topic}/homer/data",
+    peaks="{targetdir}/Generated/{topic}/peakinspection/p65_{fore}-top{number}_intersect.bed"
+  output:
+    directory("{targetdir}/Generated/{topic}/homer/p65_{fore}-top{number}.homer")
+  log:
+    "{targetdir}/Logs/{topic}/homer/findMotifsGenome-{fore}-top{number}.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/homer/findMotifsGenome-{fore}-top{number}.benchmark"
+  threads:
+    1
+  conda:
+    "env_chipseq.yaml"
+  params:
+    proxy=lambda wildcards: config['proxy'],
+  shell:
+    "findMotifsGenome.pl {input.peaks} hg19 {output} -mask 2>> {log}"
+
+
+cmps = ['TNF_1-vs-TNF', 'TNF_2-vs-TNF', 'Vehicle_1-vs-Vehicle', 'Vehicle_2-vs-Vehicle']
+rule exec_tests_chipseq:
+  input:
+    rules.build_image.output,
+    ["%s/Generated/ChIPseq/callpeak/p65_%s_peaks.xls" % (relpath(config['dir_dist']), cmp) for cmp in cmps],
+    script='ChIPseq/chipseq.tests.make',
+  output:
+    "%s/Testres/chipseq.txt" % relpath(config['dir_dist'])
+  log:
+    "%s/Logs/container_tests/chipseq.log" % relpath(config['dir_dist'])
+  benchmark:
+    "%s/Benchmarks/container_tests/chipseq.benchmark" % relpath(config['dir_dist'])
+  params:
+    proxy=lambda wildcards: config['proxy'],
+    mount=join(config['dir_dist'], 'Generated'),
+    tag=config['podman']['tagprefix']
+  shell:
+    'podman run -v ./{input.script}:/home/jovyan/makefile -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag} /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh; conda activate chipseq; make" 2>> {log} >> {output}'
+    ' && echo "=====passed=====" >> {output} 2>> {log}'
+    ' && date >> {output} 2>> {log}'
+
 rule chipseq:
   input:
-    ["%s/Generated/ChIPseq/%s_hisat2_unspliced.sorted.bam" % (relpath(config['dir_dist']), sample) for sample in samples],
-    "%s/Generated/ChIPseq/callpeak/p65_TNF_1-vs-TNF_peaks.xls" % relpath(config['dir_dist']), 
-    "%s/Generated/ChIPseq/callpeak/p65_TNF_2-vs-TNF_peaks.xls" % relpath(config['dir_dist']),
-    "%s/Generated/ChIPseq/callpeak/p65_Vehicle_1-vs-Vehicle_peaks.xls" % relpath(config['dir_dist']),
-    "%s/Generated/ChIPseq/callpeak/p65_Vehicle_2-vs-Vehicle_peaks.xls" % relpath(config['dir_dist']),
-
-    #mapping="{targetdir}/Generated/{topic}/{file}_hisat2{splice}.sorted.bam",
-#    rules.files_chipseq.output,
-#    "%s/Generated/RNAseq/multiQC" % relpath(config['dir_dist']),
-#    "%s/Generated/ChIPseq/multiQC_trimmed" % relpath(config['dir_dist']),
-#     "%s/Generated/ChIPseq/%s_trimmed_hisat2.sorted.bam" % (relpath(config['dir_dist']), samples[0])
-#    "%s/Generated/RNAseq/RNA_Scr_feature_counts.tsv" % relpath(config['dir_dist']),
-#    rules.exec_tests_rnaseq.output,
+    ["%s/Generated/ChIPseq/callpeak/p65_%s_model.pdf" % (relpath(config['dir_dist']), cmp) for cmp in cmps],
+    "%s/Generated/ChIPseq/multiQC_report" % relpath(config['dir_dist']),
+    rules.exec_tests_chipseq.output,
+    "%s/Generated/ChIPseq/homer/p65_TNF-top500.homer" % relpath(config['dir_dist']),
+    "%s/Generated/ChIPseq/homer/p65_Vehicle-top500.homer" % relpath(config['dir_dist']),
