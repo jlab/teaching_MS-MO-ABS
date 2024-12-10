@@ -13,13 +13,14 @@ I have therefore implemented a larger [snakemake](https://snakemake.readthedocs.
 You need to [install conda](https://docs.anaconda.com/miniconda/install/) first and should than be able to make use of the provided `makefile`. 
 
   1. Don't forget to set your proxy variables, if in the BCF infrastructure!
-    - `export http_proxy=http://proxy.computational.bio.uni-giessen.de:3128`
-    - `export https_proxy=http://proxy.computational.bio.uni-giessen.de:3128`
-    - `export ftp_proxy=http://proxy.computational.bio.uni-giessen.de:3128`
-  2. If `conda` is not yet available, install and initialize it first:
-	- `curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && bash ~/Miniconda3-latest-Linux-x86_64.sh`
-	- `conda init?`
-	- restart your terminal: `source ~/.bashrc`
+     - `export http_proxy=http://proxy.computational.bio.uni-giessen.de:3128`
+     - `export https_proxy=http://proxy.computational.bio.uni-giessen.de:3128`
+     - `export ftp_proxy=http://proxy.computational.bio.uni-giessen.de:3128`
+  3. If `conda` is not yet available:
+     - download: `curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh`
+     - install: `bash ~/Miniconda3-latest-Linux-x86_64.sh`
+     - initialize: `conda init`
+     - and restart your terminal: `source ~/.bashrc` first!
   5. clone this repository: `git clone https://github.com/jlab/teaching_MS-MO-ABS.git`
   6. change into the subdirectory `JHaas` of your fresh repository copy: `cd teaching_MS-MO-ABS/JHaas`
   7. trigger pipeline execution, i.e. create new conda environment, download and process all data and create podman image: `make build`
