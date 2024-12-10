@@ -24,15 +24,13 @@ rule files_tour:
 rule file_notebook:
   input:
     nb='../bioinf_software.ipynb',
-    data='../data/conda.dls.cache'
+    data="{targetdir}/Generated/{topic}/conda.dls.cache"
   output:
-     nb="%s/Generated/Tour/bioinf_software.ipynb" % relpath(config['dir_dist']),
-     data="%s/Generated/Tour/conda.dls.cache" % relpath(config['dir_dist'])
+    nb="{targetdir}/Generated/{topic}/bioinf_software.ipynb"
   log:
-    "%s/Logs/Tour/files_tour_notebook.log" % relpath(config['dir_dist'])
+    "{targetdir}/Logs/{topic}/files_tour_notebook.log"
   shell:
     'cp {input.nb} {output.nb} 2> {log}'
-    ' && cp {input.data} {output.data} 2>> {log}'
     ' && sed -i -e "s#data/pop_bioinf_software.xlsx#/Data/Tour/pop_bioinf_software.xlsx#" {output.nb} 2>> {log}'
     ' && sed -i -e "s#/homes/sjanssen/miniconda3/envs/msmoabs/bin/condastats#/opt/conda/envs/bioinftour/bin/condastats#" {output.nb} 2>> {log}'
     ' && sed -i -e \'s#fp_cache = \\\\"conda.dls.cache\\\\"#fp_cache = \\\\"/Data/Tour/conda.dls.cache\\\\"#\' {output.nb} 2>> {log}'
@@ -40,7 +38,7 @@ rule file_notebook:
 rule exec_tests_tour:
   input:
     rules.build_image.output,
-    rules.file_notebook.output,
+    "%s/Generated/Tour/bioinf_software.ipynb" % relpath(config['dir_dist']),
     rules.files_tour.output,
     script='Tour/tour.tests.make'
   output:
