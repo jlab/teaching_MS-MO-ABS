@@ -194,6 +194,7 @@ rule exec_tests_rnaseq:
     rules.files_rnaseq.output,
     script='RNAseq/rnaseq.tests.make',
     sampleSeqs=["%s/Generated/RNAseq/%s.fastq.gz" % (relpath(config['dir_dist']), sample) for sample in samples],
+    counts="%s/Generated/RNAseq/RNA_Scr_feature_counts.tsv" % relpath(config['dir_dist']),
   output:
     "%s/Testres/rnaseq.txt" % relpath(config['dir_dist'])
   log:
@@ -214,6 +215,5 @@ rule rnaseq:
     rules.files_rnaseq.output,
     "%s/Generated/RNAseq/multiQC" % relpath(config['dir_dist']),
     "%s/Generated/RNAseq/multiQC_trimmed" % relpath(config['dir_dist']),
-    "%s/Generated/RNAseq/RNA_Scr_feature_counts.tsv" % relpath(config['dir_dist']),
     rules.exec_tests_rnaseq.output,
     "%s/Generated/RNAseq/dge/deseq2_comparisons/deseq2_results_ctrl_Vs_TNF.csv" % relpath(config['dir_dist']),
