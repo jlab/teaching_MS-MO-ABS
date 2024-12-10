@@ -1,20 +1,7 @@
 from os.path import join, abspath, relpath, dirname
 
 configfile: 'settings.yaml'
-localrules: build_image, exec_tests_unix, exec_tests_tour, exec_tests_ngs, exec_tests_python, exec_tests_rnaseq, file_notebook, rnaseq_prepare_dge
-
-#def get_proxy_calls():
-#  if 'proxy' in config.keys():
-#    return ('export http_proxy="{params.proxy}" 2> {log}'
-#            ' && export https_proxy="{params.proxy}" 2>> {log}'
-#            ' && export ftp_proxy="{params.proxy}" 2>> {log}')
-#  else:
-#    return ""
-#PROXYCALLS=get_proxy_calls()
-#print(config['downloads'])
-
-#print('|'.join([name for name, item in config['downloads'].items() if 'type' in item.keys() and item['type'] == 'wget']))
-#print([name for name, item in config['downloads'].items() if 'type' in item.keys() and item['type'] == 'SRA_PE'])
+localrules: build_image, exec_tests_unix, exec_tests_tour, exec_tests_ngs, exec_tests_python, exec_tests_rnaseq, file_notebook, rnaseq_prepare_dge, exec_tests_chipseq
 
 rule build_image:
   input:
@@ -135,20 +122,14 @@ include: "Python/python.snakemake"
 include: "RNAseq/rnaseq.snakemake"
 include: "ChIPseq/chipseq.snakemake"
 
-#~ rule all:
-  #~ input:
-    #~ sra=["%s/%s/SRA/%s" % (relpath(config['dir_dist']), config['dir_%s' % config['downloads']['SRA'][item]['target_dir']], item) for item in config['downloads']['SRA'].keys()],
-    #~ sraPE=["%s/%s/SRA_PE/%s_1.fastq.bz2" % (relpath(config['dir_dist']), config['dir_%s' % config['downloads']['SRA_PE'][item]['target_dir']], item) for item in config['downloads']['SRA_PE'].keys()],
-    #~ wget=["%s/%s/wget/%s" % (relpath(config['dir_dist']), config['dir_%s' % config['downloads']['wget'][item]['target_dir']], item) for item in config['downloads']['wget'].keys()]
-  #~ output:
-    #~ all=["%s/%s/%s" % (relpath(config['dir_dist']), config['dir_refdata'], item) for item in config['downloads']['SRA'].keys()] + 
-        #~ ["%s/%s/%s" % (relpath(config['dir_dist']), config['dir_refdata'], item) for item in config['downloads']['wget'].keys()]
-  #~ log:
-    #~ "%s/%s/%s/download.log" % (relpath(config['dir_dist']), config['dir_logs'], config['dir_refdata'])
-  #~ benchmark:
-    #~ "%s/%s/%s/download.benchmark" % (relpath(config['dir_dist']), config['dir_benchmarks'], config['dir_refdata'])
-  #~ params:
-    #~ outdir=join(relpath(config['dir_dist']), config['dir_refdata'])
-  #~ shell:
-    #~ 'mv {input.sra} {input.wget} {params.outdir} -v 2> {log}'
+rule all:
+  input:
+    rules.unix.input, 
+    rules.genomics.input, 
+    rules.tour.input, 
+    rules.ngs.input, 
+    rules.python.input, 
+    rules.rnaseq.input, 
+    rules.chipseq.input
+
 
