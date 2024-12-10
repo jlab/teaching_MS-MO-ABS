@@ -20,7 +20,7 @@ rule ex_unix_BioinfFileformats:
     'zcat {input.gtf} | grep -P "^chr1\t" | gtf2bed | gzip -c > {output.bed} 2> {log.bed}'
     ' && zcat {output.bed} | awk \'BEGIN{{FS="\t"}}{{if ($8~/transcript/)print $10}}\' | awk \'NR==1 {{print "#name","name2"}}BEGIN{{FS="\\""}}{{print $4"\t"$2}}\' | gzip -c > {output.mapping} 2> {log.mapping}'
     ' && pwd=`pwd` 2> {log.fasta}'
-    ' && tmp=`mktemp -d` 2>> {log.fasta}'
+    ' && tmp=`mktemp -d -p /var/scratch/ || mktemp -d` 2>> {log.fasta}'
     ' && zcat {input.fasta} > $tmp/fasta 2>> {log.fasta}'
     ' && zcat {output.bed} | grep -P "\ttranscript\t" 2>> {log.fasta} > $tmp/bed'
     ' && cd $tmp 2>> $pwd/{log.fasta}'
