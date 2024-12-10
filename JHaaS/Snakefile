@@ -65,7 +65,7 @@ rule download_sra_PE:
     ntasks="2",
     mem_mb="4000"
   conda:
-    "Envs/env_download.yaml"
+    "NGS/env_ngs.yaml"
   params:
     url=lambda wildcards: config['downloads'][wildcards['file']]['url'],
     md5r1=lambda wildcards: config['downloads'][wildcards['file']]['md5_r1'],
@@ -97,7 +97,7 @@ rule download_sra_SE:
     ntasks="2",
     mem_mb="4000"
   conda:
-    "Envs/env_download.yaml"
+    "NGS/env_ngs.yaml"
   params:
     url=lambda wildcards: config['downloads'][wildcards['file']]['url'],
     md5=lambda wildcards: config['downloads'][wildcards['file']]['md5'],
@@ -131,5 +131,3 @@ rule all:
     rules.python.input, 
     rules.rnaseq.input, 
     rules.chipseq.input
-
-
