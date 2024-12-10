@@ -14,7 +14,7 @@ IMAGETAG=$(shell grep "tagprefix:" settings.yaml | cut -d ":" -f 2 | tr -d " ")
 build: ${PREFIX_DIR}/${SUBDIR_CONDA}/${CONDA_ENVNAME}
 	@if [ `env | grep -e proxy -c` -eq 0 ]; then echo "You probably forgot to set the proxy in our BCF infrastructure.\nIf not, remove line 14 if the makefile to avoid this test."; false; fi
 	condabin=`which conda`; dirconda=`dirname $$condabin`/../; source $$dirconda/etc/profile.d/conda.sh; conda activate ${PREFIX_DIR}/${SUBDIR_CONDA}/${CONDA_ENVNAME}; \
-	pwd=`readlink -f .`; snakemake --profile $$pwd/slurm/ -p all -n
+	pwd=`readlink -f .`; snakemake --profile $$pwd/slurm/ -p all
 
 # create an initial conda environment to install snakemake
 ${PREFIX_DIR}/${SUBDIR_CONDA}/${CONDA_ENVNAME}: env_${CONDA_ENVNAME}.yaml settings.yaml
