@@ -63,7 +63,7 @@ rule download_sra_PE:
     file='|'.join([name for name, item in config['downloads'].items() if 'type' in item.keys() and item['type'] == 'SRA_PE'])
   resources:
     ntasks="2",
-    mem_mb="6000"
+    mem_mb="8000"
   conda:
     "NGS/env_ngs.yaml"
   params:
@@ -76,9 +76,15 @@ rule download_sra_PE:
     ' && export https_proxy="{params.proxy}" 2>> {log}'
     ' && export ftp_proxy="{params.proxy}" 2>> {log}'
     ' && tmp=`mktemp -d -p /var/scratch/ || mktemp -d` 2>> {log}'
-    ' && fasterq-dump --force {params.url} --format fastq --skip-technical --threads {resources.ntasks} --mem {resources.mem_mb}MB --progress --outdir $tmp --temp /var/scratch/ 2>> {log}'
+    ' && echo "tmp is \"$tmp\" >> {log}"'
+    ' && tmpDir=`dirname $tmp`/ 2>> {log}'
+    ' && echo "--temp shall use \"$tmpDir\" >> {log}"'
+    ' && fasterq-dump -v -L info --force {params.url} --format fastq --skip-technical --threads {resources.ntasks} --mem {resources.mem_mb}MB --progress --outdir $tmp/ --temp $tmpDir 2>> {log}'
+    ' && echo "status code of fasterq-dump: $?" >> {log}'
     ' && md5sum -c <<<"{params.md5r1} `readlink -f $tmp/*_1.fastq`" 2>> {log} 1>&2'
+    ' && echo "status code of R1 md5sum: $?" >> {log}'
     ' && md5sum -c <<<"{params.md5r2} `readlink -f $tmp/*_2.fastq`" 2>> {log} 1>&2'
+    ' && echo "status code of R2 md5sum: $?" >> {log}'
     ' && mkdir -p `dirname {output.r1}` 2>> {log}'
     ' && cat $tmp/*_1.fastq | bzip2 -k -9 -c > {output.r1} 2>> {log}'
     ' && cat $tmp/*_2.fastq | bzip2 -k -9 -c > {output.r2} 2>> {log}'
@@ -95,7 +101,7 @@ rule download_sra_SE:
     file='|'.join([name for name, item in config['downloads'].items() if 'type' in item.keys() and item['type'] == 'SRA_SE'])
   resources:
     ntasks="2",
-    mem_mb="4000"
+    mem_mb="8000"
   conda:
     "NGS/env_ngs.yaml"
   params:
@@ -107,9 +113,15 @@ rule download_sra_SE:
     ' && export https_proxy="{params.proxy}" 2>> {log}'
     ' && export ftp_proxy="{params.proxy}" 2>> {log}'
     ' && tmp=`mktemp -d -p /var/scratch/ || mktemp -d` 2>> {log}'
-    ' && fasterq-dump --force {params.url} --format fastq --skip-technical --threads {resources.ntasks} --mem {resources.mem_mb}MB --progress --outdir $tmp --temp /var/scratch/ 2>> {log}'
+    ' && echo "tmp is \"$tmp\" >> {log}"'
+    ' && tmpDir=`dirname $tmp`/ 2>> {log}'
+    ' && echo "--temp shall use \"$tmpDir\" >> {log}"'
+    ' && fasterq-dump -v -L info --force {params.url} --format fastq --skip-technical --threads {resources.ntasks} --mem {resources.mem_mb}MB --progress --outdir $tmp/ --temp $tmpDir 2>> {log}'
+    ' && echo "status code of fasterq-dump: $?" >> {log}'
     ' && md5sum -c <<<"{params.md5} `readlink -f $tmp/*.fastq`" 2>> {log} 1>&2'
+    ' && echo "status code of md5sum: $?" >> {log}'
     ' && cat $tmp/*.fastq | gzip -k -9 -c > {output} 2>> {log}'
+    ' && echo "status code of gzip: $?" >> {log}'
     ' && rm -rf $tmp 2>> {log}'
 
 
@@ -131,3 +143,21 @@ rule all:
     rules.python.input, 
     rules.rnaseq.input, 
     rules.chipseq.input
+
+# this is a rule for debugging files that need to get downloaded through fasterqdump
+rule downloads:
+  input:
+    'no_backup/Generated/RNAseq/RNA_Scr_V1.fastq.gz',
+    'no_backup/Generated/RNAseq/RNA_Scr_V2.fastq.gz',
+    'no_backup/Generated/RNAseq/RNA_Scr_V3.fastq.gz',
+    'no_backup/Generated/RNAseq/RNA_Scr_T1.fastq.gz',
+    'no_backup/Generated/RNAseq/RNA_Scr_T2.fastq.gz',
+    'no_backup/Generated/RNAseq/RNA_Scr_T3.fastq.gz',
+    'no_backup/Generated/ChIPseq/p65_ChIP-seq_TNF_1.fastq.gz',
+    'no_backup/Generated/ChIPseq/p65_ChIP-seq_TNF_2.fastq.gz',
+    'no_backup/Generated/ChIPseq/p65_Input_TNF.fastq.gz',
+    'no_backup/Generated/ChIPseq/p65_ChIP-seq_Vehicle_1.fastq.gz',
+    'no_backup/Generated/ChIPseq/p65_ChIP-seq_Vehicle_2.fastq.gz',
+    'no_backup/Generated/ChIPseq/p65_Input_Vehicle.fastq.gz',
+    'no_backup/Generated/NGS/SRR3923550_1.fastq.bz2',
+    'no_backup/Generated/NGS/SRR3923550_2.fastq.bz2'
