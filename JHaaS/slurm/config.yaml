@@ -16,7 +16,7 @@ default-resources:
   - mem_mb=1000
 #  - time=168:00:00  # one week of walltime, currently to suppress snakemake warnings
 restart-times: 0
-max-jobs-per-second: 10
+max-jobs-per-second: 20
 max-status-checks-per-second: 1
 local-cores: 1
 latency-wait: 60
