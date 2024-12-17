@@ -146,6 +146,9 @@ rule exec_tests_chipseq:
   input:
     rules.build_image.output,
     ["%s/Generated/ChIPseq/callpeak/p65_%s_peaks.xls" % (relpath(config['dir_dist']), cmp) for cmp in cmps],
+    top500="%s/Generated/ChIPseq/peakinspection/p65_TNF-top500_intersect.bed" % relpath(config['dir_dist']),
+    bam_fore="%s/Generated/ChIPseq/p65_ChIP-seq_TNF_1_hisat2_unspliced.sorted.bam" % relpath(config['dir_dist']),
+    bam_back="%s/Generated/ChIPseq/p65_Input_TNF_hisat2_unspliced.sorted.bam" % relpath(config['dir_dist']),
     script='ChIPseq/chipseq.tests.make',
   output:
     "%s/Testres/chipseq.txt" % relpath(config['dir_dist'])
@@ -158,7 +161,7 @@ rule exec_tests_chipseq:
     mount=join(config['dir_dist'], 'Generated'),
     tag=config['podman']['tagprefix']
   shell:
-    'podman run -v ./{input.script}:/home/jovyan/makefile -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag} /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh; conda activate chipseq; make" 2>> {log} >> {output}'
+    'podman run -v ./{input.script}:/home/jovyan/makefile -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag} /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh; conda activate chipseq; make" 2> {log} > {output}'
     ' && echo "=====passed=====" >> {output} 2>> {log}'
     ' && date >> {output} 2>> {log}'
 
