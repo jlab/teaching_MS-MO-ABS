@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - macs2=2.2.9.1=py38h0020b31_1|py310h7c593f9_1|py311hdad781d_1|py39hff71179_1
+  - macs2=2.2.9.1=py39hff71179_1
   - bedtools
   - homer
+
