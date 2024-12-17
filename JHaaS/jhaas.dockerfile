@@ -44,7 +44,7 @@ RUN usermod -a  -G biologists ${NB_USER}
 # create conda environment for bioinformatics tour
 USER ${NB_UID}
 COPY env_tour.yaml env_tour.yaml
-RUN mamba env create --yes --name ${CE_TOUR} --file env_tour.yaml 
+RUN mamba env create --yes --name ${CE_TOUR} --file env_tour.yaml && conda clean -afy
 # to be in sync with screenshots in my slides
 RUN ln -s /opt/conda/envs/${CE_TOUR}/bin/cd-hit /opt/conda/envs/${CE_TOUR}/bin/cdhit
 # fix a bug in pandas / dask / pyarrow
@@ -52,7 +52,7 @@ RUN sed -e "s/import dask.dataframe as dd/import dask.dataframe as dd\nfrom dask
 
 # create conda environment for NGS analyes
 COPY env_ngs.yaml env_ngs.yaml
-RUN mamba env create --yes --name ${CE_NGS} --file env_ngs.yaml 
+RUN mamba env create --yes --name ${CE_NGS} --file env_ngs.yaml && conda clean -afy
 
 # install Venn diagram lib and statannot lib for python lecture in the conda base environment
 SHELL ["conda", "run", "-n", "base", "/bin/bash", "-c"]
@@ -60,15 +60,15 @@ RUN mamba install --yes -c conda-forge matplotlib-venn statannotations
 
 # create conda environment for RNAseq analyes
 COPY env_rnaseq.yaml env_rnaseq.yaml
-RUN mamba env create --yes --name ${CE_RNASEQ} --file env_rnaseq.yaml
+RUN mamba env create --yes --name ${CE_RNASEQ} --file env_rnaseq.yaml && conda clean -afy
 
 # create conda environment for DEseq2
 COPY env_dge.yaml env_dge.yaml
-RUN mamba env create --yes --name dge --file env_dge.yaml
+RUN mamba env create --yes --name dge --file env_dge.yaml && conda clean -afy
 
 # create conda environment for ChIPseq analyes
 COPY env_chipseq.yaml env_chipseq.yaml
-RUN mamba env create --yes --name ${CE_CHIPSEQ} --file env_chipseq.yaml
+RUN mamba env create --yes --name ${CE_CHIPSEQ} --file env_chipseq.yaml && conda clean -afy
 
 # hack homer such that it uses the externally provided data directory
 SHELL ["conda", "run", "-n", "chipseq", "/bin/bash", "-c"]
