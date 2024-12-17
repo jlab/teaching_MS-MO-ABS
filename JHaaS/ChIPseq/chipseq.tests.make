@@ -10,4 +10,4 @@ test_model_plot: test_macs2
 	cat ~/callpeak/p65_fore-vs-back_model.r | R --vanilla
 	
 test_homer:
-	findMotifsGenome.pl /Data/ChIPseq/peakinspection/p65_TNF-top500_intersect.bed hg19 kurt -mask -preparsedDir ./homerPreparsed -S 2 -norevopp -nomotif -basic -nocheck -noknown -noweight -N 500
+	findMotifsGenome.pl ${DATA}/ChIPseq/peakinspection/p65_TNF-top500_intersect.bed hg19 kurt -mask -preparsedDir ./homerPreparsed -S 2 -norevopp -nomotif -basic -nocheck -noknown -noweight -N 500
