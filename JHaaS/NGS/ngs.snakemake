@@ -1,3 +1,18 @@
+files = ["DB1.fasta", "DB2.fasta", "Fasta2.fa", "Fasta3.fa", "FASTA1.fasta", "UnknownGene.fasta", "UnknownProtein.fasta"]
+rule files_ngs:
+  input:
+    ["../data/NGS/%s" % f for f in files]
+  output:
+    ["%s/Generated/NGS/%s" % (relpath(config['dir_dist']), f) for f in files]
+  log:
+    "%s/Logs/NGS/files_ngs.log" % relpath(config['dir_dist'])
+  shell:
+    'srcs=({input}) 2> {log}'
+    ' && trgs=({output}) 2>> {log}'
+    ' && for i in "${{!srcs[@]}}"; do '
+    ' cp -v "${{srcs[i]}}" "${{trgs[i]}}" 2>> {log};'
+    ' done'
+
 rule ngs_fastqc:
   input:
     "{targetdir}/Generated/{topic}/{file}"
@@ -113,6 +128,7 @@ rule exec_tests_ngs:
   input:
     rules.build_image.output,
     rules.files_unix.output,
+    rules.files_ngs.output,
     script='NGS/ngs.tests.make',
     r1="%s/Generated/NGS/SRR3923550_1.fastq.bz2" % relpath(config['dir_dist']),
     r2="%s/Generated/NGS/SRR3923550_2.fastq.bz2" % relpath(config['dir_dist']),
