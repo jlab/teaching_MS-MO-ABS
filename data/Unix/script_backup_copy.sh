@@ -10,12 +10,22 @@ dirname=Backup
 # avoid using PATH as variable name, as it overwrites the environment variable PATH!!
 path="$dirname/$1_$(date +%Y-%m-%d_%H-%M-%S)"
 
-# create backup directory, -p is to avoid errors should this directory already exist
-mkdir -p $dirname
+# test if sub-directory might already exist and let user know about that.
+if [ -d $dirname ]; then
+  echo "Directory $dirname already exists, using it for backup."
+else
+  # create backup directory
+  mkdir $dirname
+  echo "Directory $dirname newly created, using it for backup."
+fi
 
-# create the actual file copy
-# -v will write infos to stderr, -a applies the "archive" mode to the target file.
-cp -av $file $path
+if [ -e $file ]; then
+  # create the actual file copy
+  # -v will write infos to stderr, -a applies the "archive" mode to the target file.
+  cp -av $file $path
 
-# inform the user
-echo "File $1 was backed up as a copy in $dirname."
+  # inform the user
+  echo "File $1 was backed up as a copy in $dirname."
+else
+  echo "File $file does not exist!"
+fi
