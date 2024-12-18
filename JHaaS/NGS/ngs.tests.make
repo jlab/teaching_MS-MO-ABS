@@ -2,7 +2,7 @@ SHELL=/usr/bin/bash
 DATA=/Data
 THREADS=2
 
-all: test_ngs_fastqc test_ngs_fmindex SRR3923550_head.sam test_ngs_samtools test_ngs_sra
+all: test_ngs_fastqc test_ngs_fmindex SRR3923550_head.sam test_ngs_samtools test_ngs_sra test_blast
 test_ngs_fastqc:
 	bzcat $(DATA)/NGS/SRR3923550_1.fastq.bz2 | head -n 400 > tmp.fastq
 	fastqc tmp.fastq
