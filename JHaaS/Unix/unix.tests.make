@@ -12,6 +12,8 @@ test_ex_unix_basic1:
 	@which -a bc
 	@echo 5+4 | bc -l
 	@time sleep 1
+	@cal 2020
+	@cal 9 1752
 	#history  # a bash feature, not a command
 
 test_ex_unix_basic2:
@@ -45,24 +47,24 @@ test_ex_unix_level2:
 	@cp junk/useless temp/
 	@mv temp/useless ~/ && mv junk/useless ~/othername
 	@rm useless othername
-	
+
 	# exercise: Linux Level 2, 5
 	@cd junk && touch useless && chmod g+rw useless && chmod u+rwx useless && chmod o-rwx useless
 	@chgrp biologists junk/useless
-	
+
 	# exercise: Linux Level 2, 6
 	@touch junk/shared.txt && chgrp biologists junk/shared.txt
-	
+
 	# exercise: Linux Level 2, 7
 	@rm -rf www www/html www/java temp junk
-	
+
 	# exercise: Linux Level 2, 8
 	@touch -- '-r' && rm -- '-r'
-	
+
 	# exercise: Linux Level 2, 9
 	@head -n 3 ${DATA}/Unix/students.txt
 	@tail -n 12 ${DATA}/Unix/students.txt
-	
+
 test_ex_unix_fileformats:
 	# exercise: Linux - Bioinformatics file Formats
 	@ls -lah ${DATA}/Unix/hg19*
@@ -94,7 +96,7 @@ test_lecture_unix:
 	@mkdir -p tuser/Mail tuser/thesis/{pictures,literature}
 	@touch tuser/baz.txt tuser/Mail/hello.txt tuser/thesis/literature/{1,2,3}.pdf tuser/thesis/Abstract.txt
 	@ps -u ${NB_USER}
-	
+
 	@cat ${DATA}/Unix/users.txt
 	@head -2 ${DATA}/Unix/users.txt
 	@tail -1 ${DATA}/Unix/users.txt
@@ -108,13 +110,23 @@ test_lecture_unix:
 	@cat ${DATA}/Unix/users.txt | sort
 	@ps -f -u `whoami`
 	@find ${NB_HOME} -name users.txt
-	@basename /homes/juser/foo.jpg 
-	@dirname /homes/juser/foo.jpg 
+	@basename /homes/juser/foo.jpg
+	@dirname /homes/juser/foo.jpg
 	@touch ~/foo.jpg && readlink -f ~/foo.jpg
-	
+
 	@wget http://hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/chr21.fa.gz
 	@gunzip chr21.fa.gz
 	@tail -n 2000 chr21.fa | head -n 15 > chr21subset.fa; true  # see https://stackoverflow.com/questions/19120263/why-exit-code-141-with-grep-q
 	@cat chr21subset.fa | grep "atg"
 	@cat chr21subset.fa | sed s/atg/ATG/g
 	@cat chr21subset.fa | tr -d "\n" | sed s/atg/ATG/g | fold -w 50
+
+test_unix_scripts:
+	@rm -rf Backup && touch kurt && ${DATA}/Unix/script_backup_copy.sh kurt && test -f Backup/kurt_*
+	@rm -rf Backup && touch kurt && ${DATA}/Unix/script_backup_copy.sh kurt > log && grep -c "newly created" log
+	@touch kurt && ${DATA}/Unix/script_backup_copy.sh kurt > log && grep -c "already exists" log
+	@${DATA}/Unix/script_backup_copy.sh kurt_no > log && grep -c "does not exist" log
+	@${DATA}/Unix/script_compare_numbers.sh 1 2 | grep "is smaller than"
+	@${DATA}/Unix/script_compare_numbers.sh 2 2 | grep "is equal to"
+	@${DATA}/Unix/script_compare_numbers.sh 2 1 | grep "is greater than"
+	@${DATA}/Unix/script_compare_numbers.sh 2 a | grep "this is wired"

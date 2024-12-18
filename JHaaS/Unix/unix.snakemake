@@ -29,7 +29,7 @@ rule ex_unix_BioinfFileformats:
     ' && cd $pwd 2>> $pwd/{log.fasta}'
     ' && rm -rf $tmp 2>> $pwd/{log.fasta}'
 
-files = ['awk.txt', 'students.txt', 'users.txt']
+files = ['awk.txt', 'students.txt', 'users.txt', 'script_backup_copy.sh', 'script_compare_numbers.sh']
 rule files_unix:
   input:
     ["../data/Unix/%s" % f for f in files]
