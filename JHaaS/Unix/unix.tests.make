@@ -1,7 +1,7 @@
 SHELL=/usr/bin/bash
 DATA=/Data
 
-all: test_ex_unix_basic1 test_ex_unix_basic2 test_ex_unix_basic3 test_ex_unix_basic4 test_ex_unix_level2 test_ex_unix_fileformats test_lecture_unix
+all: test_ex_unix_basic1 test_ex_unix_basic2 test_ex_unix_basic3 test_ex_unix_basic4 test_ex_unix_level2 test_ex_unix_fileformats test_lecture_unix test_unix_scripts test_lecture_regex test_lecture_awk test_exercise_sed test_bioinfformats_hpylori
 test_ex_unix_basic1:
 	@echo "hello world"
 	@date
@@ -130,3 +130,63 @@ test_unix_scripts:
 	@${DATA}/Unix/script_compare_numbers.sh 2 2 | grep "is equal to"
 	@${DATA}/Unix/script_compare_numbers.sh 2 1 | grep "is greater than"
 	@${DATA}/Unix/script_compare_numbers.sh 2 a | grep "this is wired"
+
+TEST_PRINT=$(shell sed 's/Faust/Rüdiger/p' ${DATA}/Unix/faust.txt | wc -l)
+TEST_SUPRESS=$(shell sed -n 's/Faust/Rüdiger/p' ${DATA}/Unix/faust.txt | wc -l)
+test_lecture_regex:
+	@echo "a aegtetgeg eg e" | grep "eg"
+	@echo "a aegtetgeg eg e" | grep "eg."
+	@echo "a aegtetgeg eg e" | grep "eg*"
+	@echo "a aegtetgeg eg e" | grep ".*"
+	@echo "a aegtetgeg eg e" | grep "[a-f]"
+	@sed 's/Faust/Rüdiger/g' ${DATA}/Unix/faust.txt | grep Rüdiger
+	@sed '/^H/ s/Faust/Rüdiger/g' ${DATA}/Unix/faust.txt | grep -E "Rüdiger|Faust"
+	@sed '/^H/,/^J/ s/Faust/Rüdiger/g' ${DATA}/Unix/faust.txt | grep -E "Rüdiger|Faust"
+	@test ${TEST_PRINT} -eq 9
+	@test ${TEST_SUPRESS} -eq 3
+
+TEST_COL1=$(shell awk '{print $$1}' ${DATA}/Unix/awk.txt | wc -m)
+TEST_COL1_2=$(shell cat ${DATA}/Unix/awk.txt | awk '{print $$1}' | wc -m)
+TEST_ALL=$(shell awk '{print $$0}' ${DATA}/Unix/awk.txt | wc -m)
+TEST_COL1_minus2=$(shell cat ${DATA}/Unix/awk.txt | awk '{print $$1, $$(NF-2)}' | wc -m)
+test_lecture_awk:
+	@test ${TEST_COL1} -eq 42
+	@test ${TEST_COL1_2} -eq 42
+	@test ${TEST_ALL} -eq 121
+	@echo "this is a test" | awk '{print $$3}' | grep "^a$$"
+	@echo "this is a test" | awk '{print $$NF}' | grep "^test$$"
+	@test ${TEST_COL1_minus2} -eq 52
+	@cat ${DATA}/Unix/awk.txt | awk '{print $$1,$$3}' | grep "nucleotide_motif"
+	@cat ${DATA}/Unix/awk.txt | awk 'BEGIN{FS="_"} {print $$1,$$3}' | grep "fimo\."
+	@cat ${DATA}/Unix/awk.txt | awk '{print $$1}' | awk 'BEGIN{FS="_"} {print $$1,$$3}' | grep -v "fimo\."
+
+test_exercise_sed:
+	@cat ${DATA}/Unix/students.txt | sed -n '2p'
+	@cat ${DATA}/Unix/students.txt | sed -n '2,5p'
+	@cat ${DATA}/Unix/students.txt | sed -n '/^M/p'
+	@cat ${DATA}/Unix/students.txt | sed '/^M/d'
+	@cat ${DATA}/Unix/students.txt | sed 's/[1-9]/2/g'
+	@cat ${DATA}/Unix/students.txt | sed 's/Mateo/Unbekannt/g'
+	@cat ${DATA}/Unix/students.txt | awk '{print $$1}'
+	@cat ${DATA}/Unix/students.txt | awk 'NR>1 {print $$1}'
+	@cat ${DATA}/Unix/students.txt | awk '$$1~/^M/ {print $$1}'
+	@cat ${DATA}/Unix/students.txt | awk '$$1~/[ic]/ {print $$1}'
+	@cat ${DATA}/Unix/students.txt | awk '$$2~/Bio/ {print}'
+	@cat ${DATA}/Unix/students.txt | awk '$$3>2'
+	@cat ${DATA}/Unix/students.txt | awk '$$3>2 {print $$1}'
+	@cat ${DATA}/Unix/students.txt | awk 'NR>1 && $$3>2 {print $$1}'
+	@cat ${DATA}/Unix/students.txt | awk '$$2~/Bio/ && $$3>2 {print $$1}'
+	@cat ${DATA}/Unix/students.txt | awk '$$2~/Chem/ && $$3==2 {print $$1}'
+	@cat ${DATA}/Unix/faust_long.txt | sed -n '17p'
+	@cat ${DATA}/Unix/faust_long.txt | sed -n '17,19p'
+	@cat ${DATA}/Unix/faust_long.txt | sed '/\.$$/d'
+	@cat ${DATA}/Unix/faust_long.txt | sed '/^$$/d'
+
+test_bioinfformats_hpylori:
+	@ls -la -h ${DATA}/Unix/Helicobacter_pylori_B8.*
+	@du -h ${DATA}/Unix/Helicobacter_pylori_B8.*
+	@for f in `find ${DATA}/Unix/ -type f -name "Helicobacter_pylori_B8*" | sort`; do tf=`basename $$f | rev | cut -b 4- | rev`;  zcat $$f > $$tf; ls -lah $$tf; done
+	@zcat ${DATA}/Unix/Helicobacter_pylori_B8.faa.gz | grep -c "^>"
+	@zcat ${DATA}/Unix/Helicobacter_pylori_B8.gbff.gz | grep -c -E "^\s+CDS\s+"
+	@zcat ${DATA}/Unix/Helicobacter_pylori_B8.gbff.gz | grep -c -E "^\s+CDS\s+complement"
+	@zcat ${DATA}/Unix/Helicobacter_pylori_B8.gbff.gz | grep -c -E "^\s+CDS\s+[0-9]"
