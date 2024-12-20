@@ -8,7 +8,7 @@ proxy: http://proxy.computational.bio.uni-giessen.de:3128
 podman:
   tagprefix: jhaas_msmoabs
 downloads:
-  hg19.ncbiRefSeq.gtf.gz:  
+  hg19.ncbiRefSeq.gtf.gz:
     url: https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/genes/hg19.ncbiRefSeq.gtf.gz
     md5: ccd53cf898616135c47c793c975cef39
     type: wget
@@ -115,3 +115,19 @@ downloads:
     md5: 26cdd5a3a539b63930752604feb2912b
     type: wget
 
+# three files for the H.pylori file format exercise
+  Helicobacter_pylori_B8.fna.gz:
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/196/755/GCF_000196755.1_ASM19675v1/GCF_000196755.1_ASM19675v1_genomic.fna.gz
+    md5: e503272c38168e38adbcf0300bbdd36e
+    type: wget
+    desc: "exercise bioinformatics file formats"
+  Helicobacter_pylori_B8.gbff.gz:
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/196/755/GCF_000196755.1_ASM19675v1/GCF_000196755.1_ASM19675v1_genomic.gbff.gz
+    md5: c38c5282c2715c5c512f6033429789e1
+    type: wget
+    desc: "exercise bioinformatics file formats"
+  Helicobacter_pylori_B8.faa.gz:
+    url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/196/755/GCF_000196755.1_ASM19675v1/GCF_000196755.1_ASM19675v1_protein.faa.gz
+    md5: 9e468b269539f0fef1f285b216d791a4
+    type: wget
+    desc: "exercise bioinformatics file formats"

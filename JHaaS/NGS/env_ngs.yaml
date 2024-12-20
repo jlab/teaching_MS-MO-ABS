@@ -8,3 +8,4 @@ dependencies:
   - bowtie2
   - samtools
   - bcftools
+  - blast

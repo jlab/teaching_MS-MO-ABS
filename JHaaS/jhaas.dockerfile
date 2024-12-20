@@ -75,3 +75,13 @@ SHELL ["conda", "run", "-n", "chipseq", "/bin/bash", "-c"]
 RUN cd $CONDA_PREFIX/share/homer && mv data old_data && ln -s /Data/ChIPseq/homer/data .
 RUN sed 's#^ORGANISMS#ORGANISMS\nhuman\tv7.0\tHomo sapiens (human) accession and ontology information\thttp://homer.ucsd.edu/homer/data/organisms/human.v7.0.zip\tdata/accession/\t9606,NCBI Gene#' -i $CONDA_PREFIX/share/homer/config.txt
 RUN sed 's#^GENOMES#GENOMES\nhg19\tv7.0\thuman genome and annotation for UCSC hg19\thttp://homer.ucsd.edu/homer/data/genomes/hg19.v7.0.zip\tdata/genomes/hg19/\thuman,default#' -i $CONDA_PREFIX/share/homer/config.txt
+
+# modify bash behaviour:
+#   - do NOT make machine name part of the prompt, as it is very length in JHaaS
+#   - append settings in file bashrc to the global bashrc file in the container
+#   - initialize conda
+USER root
+COPY bashrc /etc/bashrc.jhaas
+RUN cat /etc/bashrc.jhaas >> /etc/bash.bashrc; conda init --system
+
+USER ${NB_UID}

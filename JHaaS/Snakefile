@@ -10,7 +10,8 @@ rule build_image:
     env_dge='RNAseq/env_dge.yaml',
     env_ngs='NGS/env_ngs.yaml',
     env_chipseq='ChIPseq/env_chipseq.yaml',
-    docker='jhaas.dockerfile'
+    docker='jhaas.dockerfile',
+    bashrc='bashrc'
   output:
     "%s/jhaas_image.txt" % relpath(config['dir_dist'])
   log:
@@ -23,7 +24,7 @@ rule build_image:
     tag=config['podman']['tagprefix']
   shell:
     'tmp=`mktemp -d` 2> {log}'
-    ' && cp {input.env_tour} {input.env_rnaseq} {input.env_dge} {input.env_chipseq} {input.env_ngs} {input.docker} $tmp 2>> {log}'
+    ' && cp {input.env_tour} {input.env_rnaseq} {input.env_dge} {input.env_chipseq} {input.env_ngs} {input.docker} {input.bashrc} $tmp 2>> {log}'
     ' && podman build $tmp -f $tmp/{input.docker} -t {params.tag} --format=docker --build-arg http_proxy="{params.proxy}" --build-arg https_proxy="{params.proxy}" --build-arg ftp_proxy="{params.proxy}" 2>> {log} > {output}'
     ' && rm -rf $tmp 2>> {log}'
     ' && echo "image built" > {output} 2>> {log}'
@@ -136,12 +137,12 @@ include: "ChIPseq/chipseq.snakemake"
 
 rule all:
   input:
-    rules.unix.input, 
-    rules.genomics.input, 
-    rules.tour.input, 
-    rules.ngs.input, 
-    rules.python.input, 
-    rules.rnaseq.input, 
+    rules.unix.input,
+    rules.genomics.input,
+    rules.tour.input,
+    rules.ngs.input,
+    rules.python.input,
+    rules.rnaseq.input,
     rules.chipseq.input
 
 # this is a rule for debugging files that need to get downloaded through fasterqdump

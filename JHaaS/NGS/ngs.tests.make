@@ -2,7 +2,7 @@ SHELL=/usr/bin/bash
 DATA=/Data
 THREADS=2
 
-all: test_ngs_fastqc test_ngs_fmindex SRR3923550_head.sam test_ngs_samtools test_ngs_sra
+all: test_ngs_fastqc test_ngs_fmindex SRR3923550_head.sam test_ngs_samtools test_ngs_sra test_blast
 test_ngs_fastqc:
 	bzcat $(DATA)/NGS/SRR3923550_1.fastq.bz2 | head -n 400 > tmp.fastq
 	fastqc tmp.fastq
@@ -30,3 +30,14 @@ test_ngs_samtools: SRR3923550_head.sam
 test_ngs_sra:
 	@fasterq-dump -p ERR12342748
 	@cat ERR12342748.fastq | bzip2 -k --fast -c > ERR12342748.fastq.bz2
+
+test_blast:
+	@cat ${DATA}/NGS/FASTA1.fasta ${DATA}/NGS/Fasta2.fa  ${DATA}/NGS/Fasta3.fa > all.fasta
+	@grep -c "^>" all.fasta
+	@makeblastdb -in ${DATA}/NGS/DB1.fasta -parse_seqids -dbtype prot -out myprot
+	@makeblastdb -in ${DATA}/NGS/DB2.fasta -dbtype nucl -out mynuc
+	@blastx -query all.fasta -db myprot -out all.fasta_vs_DB1_protein_tab.blast -outfmt 6
+	@blastx -query all.fasta -db myprot -out all.fasta_vs_DB1_protein_default.blast
+	@blastn -query all.fasta -db mynuc -out all.fasta_vs_DB2_nucleotide_tab.blast -outfmt 6
+	@blastn -query all.fasta -db mynuc -out all.fasta_vs_DB2_nucleotide_default.blast
+	@blastn -query all.fasta -db mynuc -outfmt "6 std sstrand"
