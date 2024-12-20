@@ -34,8 +34,8 @@ test_ngs_sra:
 test_blast:
 	@cat ${DATA}/NGS/FASTA1.fasta ${DATA}/NGS/Fasta2.fa  ${DATA}/NGS/Fasta3.fa > all.fasta
 	@grep -c "^>" all.fasta
-	@makeblastdb -in /Data/NGS/DB1.fasta -parse_seqids -dbtype prot -out myprot
-	@makeblastdb -in /Data/NGS/DB2.fasta -dbtype nucl -out mynuc
+	@makeblastdb -in ${DATA}/NGS/DB1.fasta -parse_seqids -dbtype prot -out myprot
+	@makeblastdb -in ${DATA}/NGS/DB2.fasta -dbtype nucl -out mynuc
 	@blastx -query all.fasta -db myprot -out all.fasta_vs_DB1_protein_tab.blast -outfmt 6
 	@blastx -query all.fasta -db myprot -out all.fasta_vs_DB1_protein_default.blast
 	@blastn -query all.fasta -db mynuc -out all.fasta_vs_DB2_nucleotide_tab.blast -outfmt 6
