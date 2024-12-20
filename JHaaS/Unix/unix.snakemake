@@ -24,7 +24,7 @@ rule ex_unix_BioinfFileformats:
     ' && zcat {input.fasta} > $tmp/fasta 2>> {log.fasta}'
     ' && zcat {output.bed} | grep -P "\ttranscript\t" 2>> {log.fasta} > $tmp/bed'
     ' && cd $tmp 2>> $pwd/{log.fasta}'
-    ' && bedtools getfasta -fi fasta -bed bed -name > tmp.faa 2>> $pwd/{log.fasta}'
+    ' && bedtools getfasta -fi fasta -bed bed -name | fold -w 80 > tmp.faa 2>> $pwd/{log.fasta}'
     ' && gzip tmp.faa -c > $pwd/{output.fasta} 2>> $pwd/{log.fasta}'
     ' && cd $pwd 2>> $pwd/{log.fasta}'
     ' && rm -rf $tmp 2>> $pwd/{log.fasta}'
