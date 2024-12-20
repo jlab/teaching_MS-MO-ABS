@@ -1,0 +1,63 @@
+files = ['pop_bioinf_software.xlsx', 'conda.dls.cache', 'meiers.txt',
+         'meiers.fasta', 'meiers.msa', 'meierhistory.txt',
+         'NC_000913.3_Escherichia_coli_K-12.fasta.gz', 
+         'NC_002695.2_Escherichia_coli_O157.fasta.gz',
+         'NC_003210.1_Listeria_monocytogenes_EGD-e.fasta.gz',
+         'NC_004337.2_Shigella_flexneri_2a_301.fasta.gz',
+         'ass_reads_50-30.fq.gz', 'ass_reads_50-60.fq.gz',
+         'sarscov2_spike_pcr.fasta', 'trna.fasta', 'hsa-mir-145.fasta',
+         'mrna.fasta', 'hg38_chr5_rnahit.fasta']
+rule files_tour:
+  input:
+    ["../data/%s" % f for f in files]
+  output:
+    ["%s/Generated/Tour/%s" % (relpath(config['dir_dist']), f) for f in files]
+  log:
+    "%s/Logs/Tour/files_tour.log" % relpath(config['dir_dist'])
+  shell:
+    'srcs=({input}) 2> {log}'
+    ' && trgs=({output}) 2>> {log}'
+    ' && for i in "${{!srcs[@]}}"; do '
+    ' cp -v "${{srcs[i]}}" "${{trgs[i]}}" 2>> {log};'
+    ' done'
+
+rule file_notebook:
+  input:
+    nb='../bioinf_software.ipynb',
+    data="{targetdir}/Generated/{topic}/conda.dls.cache"
+  output:
+    nb="{targetdir}/Generated/{topic}/bioinf_software.ipynb"
+  log:
+    "{targetdir}/Logs/{topic}/files_tour_notebook.log"
+  shell:
+    'cp {input.nb} {output.nb} 2> {log}'
+    ' && sed -i -e "s#data/pop_bioinf_software.xlsx#/Data/Tour/pop_bioinf_software.xlsx#" {output.nb} 2>> {log}'
+    ' && sed -i -e "s#/homes/sjanssen/miniconda3/envs/msmoabs/bin/condastats#/opt/conda/envs/bioinftour/bin/condastats#" {output.nb} 2>> {log}'
+    ' && sed -i -e \'s#fp_cache = \\\\"conda.dls.cache\\\\"#fp_cache = \\\\"/Data/Tour/conda.dls.cache\\\\"#\' {output.nb} 2>> {log}'
+
+rule exec_tests_tour:
+  input:
+    rules.build_image.output,
+    "%s/Generated/Tour/bioinf_software.ipynb" % relpath(config['dir_dist']),
+    rules.files_tour.output,
+    script='Tour/tour.tests.make'
+  output:
+    "%s/Testres/tour.txt" % relpath(config['dir_dist'])
+  log:
+    "%s/Logs/container_tests/tour.log" % relpath(config['dir_dist'])
+  benchmark:
+    "%s/Benchmarks/container_tests/tour.benchmark" % relpath(config['dir_dist'])
+  params:
+    proxy=lambda wildcards: config['proxy'],
+    mount=join(config['dir_dist'], 'Generated'),
+    tag=config['podman']['tagprefix']
+  shell:
+    'podman run -v ./{input.script}:/home/jovyan/makefile -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag} /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh; conda activate bioinftour; make" 2>> {log} >> {output}'
+    ' && echo "=====passed=====" >> {output} 2>> {log}'
+    ' && date >> {output} 2>> {log}'
+
+rule tour:
+  input:
+    rules.files_tour.output,
+    #'%s/Generated/Unix/hg19.ncbiRefSeq.chr1.bed.gz' % relpath(config['dir_dist']),
+    rules.exec_tests_tour.output

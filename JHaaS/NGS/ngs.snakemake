@@ -1,0 +1,161 @@
+files = ["DB1.fasta", "DB2.fasta", "Fasta2.fa", "Fasta3.fa", "FASTA1.fasta", "UnknownGene.fasta", "UnknownProtein.fasta"]
+rule files_ngs:
+  input:
+    ["../data/NGS/%s" % f for f in files]
+  output:
+    ["%s/Generated/NGS/%s" % (relpath(config['dir_dist']), f) for f in files]
+  log:
+    "%s/Logs/NGS/files_ngs.log" % relpath(config['dir_dist'])
+  shell:
+    'srcs=({input}) 2> {log}'
+    ' && trgs=({output}) 2>> {log}'
+    ' && for i in "${{!srcs[@]}}"; do '
+    ' cp -v "${{srcs[i]}}" "${{trgs[i]}}" 2>> {log};'
+    ' done'
+
+rule ngs_fastqc:
+  input:
+    "{targetdir}/Generated/{topic}/{file}"
+  output:
+    directory("{targetdir}/Generated/{topic}/fastQC_{file}")
+  log:
+    "{targetdir}/Logs/{topic}/{file}_fastqc.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/{file}_fastqc.benchmark"
+  conda:
+    "env_ngs.yaml"
+  threads:
+    1
+  shell:
+    "mkdir -p {output} 2> {log}"
+    " && fastqc {input} -o {output} --threads {threads} 2>> {log}"
+
+rule ex_ngs_fmindex:
+  input:
+    '{targetdir}/Generated/NGS/chr9.fa.gz'
+  output:
+    '{targetdir}/Generated/NGS/chr9.1.bt2',
+    '{targetdir}/Generated/NGS/chr9.2.bt2',
+    '{targetdir}/Generated/NGS/chr9.3.bt2',
+    '{targetdir}/Generated/NGS/chr9.4.bt2',
+    '{targetdir}/Generated/NGS/chr9.rev.1.bt2',
+    '{targetdir}/Generated/NGS/chr9.rev.2.bt2',
+  log:
+    "{targetdir}/Logs/NGS/chr9-bowtiebuild.log",
+  benchmark:
+    "{targetdir}/Benchmarks/NGS/chr9-bowtiebuild.benchmark"
+  conda:
+    "env_ngs.yaml"
+  resources:
+    ntasks="2",
+  params:
+    outdir=lambda wildcards: relpath(join(config['dir_dist'], 'Generated', 'NGS', 'chr9'))
+  shell:
+    'bowtie2-build --threads {resources.ntasks} {input} {params.outdir} 2> {log}'
+
+rule ex_ngs_align:
+  input:
+    index='{targetdir}/Generated/NGS/hg19.zip',
+    r1="{targetdir}/Generated/NGS/SRR3923550_1.fastq.bz2",
+    r2="{targetdir}/Generated/NGS/SRR3923550_2.fastq.bz2"
+  output:
+    bt1='{targetdir}/Generated/NGS/bowtie-hg19/hg19.1.bt2',
+    bt2='{targetdir}/Generated/NGS/bowtie-hg19/hg19.2.bt2',
+    bt3='{targetdir}/Generated/NGS/bowtie-hg19/hg19.3.bt2',
+    bt4='{targetdir}/Generated/NGS/bowtie-hg19/hg19.4.bt2',
+    btr1='{targetdir}/Generated/NGS/bowtie-hg19/hg19.rev.1.bt2',
+    btr2='{targetdir}/Generated/NGS/bowtie-hg19/hg19.rev.2.bt2',
+    make='{targetdir}/Generated/NGS/bowtie-hg19/make_hg19.sh',
+    mapping='{targetdir}/Generated/NGS/SRR3923550_hg19.sam'
+  log:
+    "{targetdir}/Logs/NGS/bowtie-align.log"
+  benchmark:
+    "{targetdir}/Benchmarks/NGS/bowtie-align.benchmark"
+  conda:
+    "env_ngs.yaml"
+  resources:
+    ntasks="4",
+    mem_mb="4000",
+  params:
+    dirIndex=lambda wildcards: relpath(join(config['dir_dist'], 'Generated', 'NGS', 'bowtie-hg19'))
+  shell:
+    'mkdir -p {params.dirIndex} 2> {log}'
+    ' && pwd=`pwd` 2>> {log}'
+    ' && cd {params.dirIndex} 2>> $pwd/{log}'
+    ' && unzip $pwd/{input.index} 2>> $pwd/{log}'
+    ' && cd $pwd 2>> $pwd/{log}'
+    ' && bowtie2 --threads {resources.ntasks} -x `dirname {output.bt1}`/hg19 -1 {input.r1} -2 {input.r2} -S {output.mapping} 2>> {log}'
+
+rule ex_ngs_samtools:
+  input:
+    '{targetdir}/Generated/NGS/SRR3923550_hg19.sam'
+  output:
+    bam='{targetdir}/Generated/NGS/SRR3923550_hg19.bam',
+    srt='{targetdir}/Generated/NGS/SRR3923550_hg19.sorted.bam',
+    idx='{targetdir}/Generated/NGS/SRR3923550_hg19.sorted.bam.bai'
+  log:
+    "{targetdir}/Logs/NGS/samtools.log"
+  benchmark:
+    "{targetdir}/Benchmarks/NGS/samtools.benchmark"
+  conda:
+    "env_ngs.yaml"
+  shell:
+    'samtools view -bh -F 4 {input} -o {output.bam} 2> {log}'
+    ' && samtools sort {output.bam} -o {output.srt} 2>> {log}'
+    ' && samtools index {output.srt} 2>> {log}'
+
+rule ex_ngs_mpileup:
+  input:
+    reference='{targetdir}/Generated/NGS/chr9.fa.gz',
+    mapping='{targetdir}/Generated/NGS/SRR3923550_hg19.sorted.bam'
+  output:
+    reference='{targetdir}/Generated/NGS/chr9.fa',
+    index='{targetdir}/Generated/NGS/chr9.fa.fai',
+    sam='{targetdir}/Generated/NGS/SRR3923550_hg19.pileup-sam.txt',
+    bcf='{targetdir}/Generated/NGS/SRR3923550_hg19.pileup-bcf.txt'
+  log:
+    "{targetdir}/Logs/NGS/mpileup.log"
+  benchmark:
+    "{targetdir}/Benchmarks/NGS/mpileup.benchmark"
+  conda:
+    "env_ngs.yaml"
+  shell:
+    'zcat {input.reference} > {output.reference} 2> {log}'
+    ' && samtools mpileup -f {output.reference} {input.mapping} -r chr9:21971132-21971142 > {output.sam} 2>> {log}'
+    ' && bcftools mpileup -f {output.reference} {input.mapping} -r chr9:21971132-21971142 > {output.bcf} 2>> {log}'
+
+rule exec_tests_ngs:
+  input:
+    rules.build_image.output,
+    rules.files_unix.output,
+    rules.files_ngs.output,
+    script='NGS/ngs.tests.make',
+    r1="%s/Generated/NGS/SRR3923550_1.fastq.bz2" % relpath(config['dir_dist']),
+    r2="%s/Generated/NGS/SRR3923550_2.fastq.bz2" % relpath(config['dir_dist']),
+    bt1='%s/Generated/NGS/bowtie-hg19/hg19.1.bt2' % relpath(config['dir_dist'])
+  output:
+    "%s/Testres/ngs.txt" % relpath(config['dir_dist'])
+  log:
+    "%s/Logs/container_tests/ngs.log" % relpath(config['dir_dist'])
+  benchmark:
+    "%s/Benchmarks/container_tests/ngs.benchmark" % relpath(config['dir_dist'])
+  params:
+    proxy=lambda wildcards: config['proxy'],
+    mount=join(config['dir_dist'], 'Generated'),
+    tag=config['podman']['tagprefix']
+  shell:
+    'podman run -v ./{input.script}:/home/jovyan/makefile -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag} /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh; conda activate ngs; make" 2>> {log} >> {output}'
+    ' && echo "=====passed=====" >> {output} 2>> {log}'
+    ' && date >> {output} 2>> {log}'
+
+
+rule ngs:
+  input:
+    "%s/Generated/NGS/fastQC_SRR3923550_1.fastq.bz2/" % relpath(config['dir_dist']),
+    "%s/Generated/NGS/fastQC_SRR3923550_2.fastq.bz2/" % relpath(config['dir_dist']),
+    '%s/Generated/NGS/chr9.1.bt2' % relpath(config['dir_dist']),
+    "%s/Generated/NGS/SRR3923550_hg19.sam" % relpath(config['dir_dist']),
+    "%s/Generated/NGS/SRR3923550_hg19.sorted.bam.bai" % relpath(config['dir_dist']),
+    "%s/Generated/NGS/SRR3923550_hg19.pileup-sam.txt" % relpath(config['dir_dist']),
+    rules.build_image.output,
+    rules.exec_tests_ngs.output

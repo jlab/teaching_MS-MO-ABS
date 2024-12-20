@@ -1,0 +1,219 @@
+samples = ["RNA_Scr_V1", "RNA_Scr_V2", "RNA_Scr_V3", "RNA_Scr_T1", "RNA_Scr_T2", "RNA_Scr_T3"]
+
+files = ['../rnaseq_normalizations.ipynb', "../data/RNAseq/Normalization.ipynb", "../data/RNAseq/Normalization_solutions.ipynb", "../data/RNAseq/deseq2.R"]
+rule files_rnaseq:
+  input:
+    ["%s" % f for f in files]
+  output:
+    ["%s/Generated/RNAseq/%s" % (relpath(config['dir_dist']), os.path.basename(f)) for f in files]
+  log:
+    "%s/Logs/RNAseq/files_rnaseq.log" % relpath(config['dir_dist'])
+  shell:
+    'srcs=({input}) 2> {log}'
+    ' && trgs=({output}) 2>> {log}'
+    ' && for i in "${{!srcs[@]}}"; do '
+    ' cp -v "${{srcs[i]}}" "${{trgs[i]}}" 2>> {log};'
+    ' done'
+
+rule rnaseq_multiqc:
+  input:
+    ["{targetdir}/Generated/RNAseq/fastQC_%s.fastq.gz/" % sample for sample in samples],
+    "{targetdir}/Generated/NGS/fastQC_SRR3923550_1.fastq.bz2/",
+    "{targetdir}/Generated/NGS/fastQC_SRR3923550_2.fastq.bz2/",
+  output:
+    directory("{targetdir}/Generated/{topic}/multiQC")
+  log:
+    "{targetdir}/Logs/{topic}/multiqc.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/multiqc.benchmark"
+  conda:
+    "env_rnaseq.yaml"
+  threads:
+    1
+  shell:
+    "mkdir -p {output} 2> {log}"
+    " && multiqc {input} --outdir {output} 2>> {log}"
+
+rule rnaseq_trim:
+  input:
+    "{targetdir}/Generated/{topic}/{file}.fastq.gz"
+  output:
+    dir=directory("{targetdir}/Generated/{topic}/{file}_trimmed"),
+    fastq="{targetdir}/Generated/{topic}/{file}_trimmed.fastq.gz"
+  log:
+    "{targetdir}/Logs/{topic}/trimming/{file}.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/trimming/{file}.benchmark"
+#  wildcard_constraints:
+#    topic='RNAseq'
+  conda:
+    "env_rnaseq.yaml"
+  resources:
+    ntasks="4",
+  shell:
+    'trim_galore --fastqc --gzip -o {output.dir} -j {resources.ntasks} {input} 2> {log}'
+    ' && mv -v {output.dir}/*.fq.gz {output.fastq} 2>>  {log}'
+
+rule rnaseq_multiqc_trimmed:
+  input:
+    ["{targetdir}/Generated/RNAseq/%s_trimmed/" % sample for sample in samples],
+    "{targetdir}/Generated/NGS/fastQC_SRR3923550_1.fastq.bz2/",
+    "{targetdir}/Generated/NGS/fastQC_SRR3923550_2.fastq.bz2/",
+  output:
+    directory("{targetdir}/Generated/{topic}/multiQC_trimmed")
+  log:
+    "{targetdir}/Logs/{topic}/multiqc_trimmed.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/multiqc_trimmed.benchmark"
+#  wildcard_constraints:
+#    topic='RNAseq'
+  conda:
+    "env_rnaseq.yaml"
+  threads:
+    1
+  shell:
+    "mkdir -p {output} 2> {log}"
+    " && multiqc {input} --outdir {output} 2>> {log}"
+
+rule rnaseq_prepareHisat2:
+  input:
+    index="{targetdir}/Generated/{topic}/hg19_genome.tar.gz",
+    annot="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.gtf.gz",
+  output:
+    idx1="{targetdir}/Generated/{topic}/hg19/genome.1.ht2",
+    idx2="{targetdir}/Generated/{topic}/hg19/genome.2.ht2",
+    idx3="{targetdir}/Generated/{topic}/hg19/genome.3.ht2",
+    idx4="{targetdir}/Generated/{topic}/hg19/genome.4.ht2",
+    idx5="{targetdir}/Generated/{topic}/hg19/genome.5.ht2",
+    idx6="{targetdir}/Generated/{topic}/hg19/genome.6.ht2",
+    idx7="{targetdir}/Generated/{topic}/hg19/genome.7.ht2",
+    idx8="{targetdir}/Generated/{topic}/hg19/genome.8.ht2",
+    make="{targetdir}/Generated/{topic}/hg19/make_hg19.sh",
+    splice="{targetdir}/Generated/{topic}/hg19_splice_sites",
+  log:
+    "{targetdir}/Logs/{topic}/prepareHisat2.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/prepareHisat2.benchmark"
+  threads:
+    1
+  conda:
+    "env_rnaseq.yaml"
+  shell:
+    "extract_splice_sites.py <(zcat {input.annot}) > {output.splice} 2> {log}"
+    " && tar xzvf {input.index} -C `dirname {input.index}`/ 2>> {log}"
+
+rule rnaseq_hisat2:
+  input:
+    splice="{targetdir}/Generated/RNAseq/hg19_splice_sites",
+    idx1="{targetdir}/Generated/RNAseq/hg19/genome.1.ht2",
+    seqs="{targetdir}/Generated/{topic}/{file}_trimmed.fastq.gz",
+  output:
+    mapping="{targetdir}/Generated/{topic}/{file}_hisat2{splice}.sorted.bam",
+    idx="{targetdir}/Generated/{topic}/{file}_hisat2{splice}.sorted.bam.bai",
+  log:
+    hisat="{targetdir}/Logs/{topic}/hisat/{file}_hisat{splice}.log",
+    view="{targetdir}/Logs/{topic}/hisat/{file}_view{splice}.log",
+    sort="{targetdir}/Logs/{topic}/hisat/{file}_sort{splice}.log",
+    idx="{targetdir}/Logs/{topic}/hisat/{file}_index{splice}.log",
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/hisat/{file}{splice}.benchmark"
+  wildcard_constraints:
+    splice='_unspliced|_spliced'
+  conda:
+    "env_rnaseq.yaml"
+  resources:
+    ntasks="4",
+    mem_mb="8000",
+  params:
+    option_splice=lambda wildcards, input: " --known-splicesite-infile %s " % input.splice if wildcards['splice'] == '_spliced' else ''
+  shell:
+    "fp_sam=`echo {output.mapping} | sed 's/.sorted.bam$/.sam/'` 2> {log.hisat}"
+    " && hisat2 -x `echo {input.idx1} | sed 's/.1.ht2//'` {params.option_splice} -p {resources.ntasks} -q -U {input.seqs} -S $fp_sam 2>> {log.hisat}"
+    " && samtools view -bh $fp_sam 2> {log.view} | samtools sort -o {output.mapping} 2> {log.sort} "
+    " && samtools index {output.mapping} 2> {log.idx}"
+    " && rm -v -f $fp_sam 2>> {log.hisat}"
+
+rule rnaseq_featureCounts:
+  input:
+    annot="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.gtf.gz",
+    samples=["{targetdir}/Generated/{topic}/%s_hisat2_spliced.sorted.bam" % sample for sample in samples],
+  output:
+    table="{targetdir}/Generated/{topic}/RNA_Scr_feature_counts.tsv",
+    summary="{targetdir}/Generated/{topic}/RNA_Scr_feature_counts.tsv.summary",
+  log:
+    hisat="{targetdir}/Logs/{topic}/featureCounts.log",
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/featureCounts.benchmark"
+  conda:
+    "env_rnaseq.yaml"
+  resources:
+    ntasks="4",
+  shell:
+    "featureCounts -a {input.annot} -M -O -T {resources.ntasks} -o {output.table} {input.samples} 2> {log}"
+
+rule rnaseq_prepare_dge:
+  input:
+    ["{targetdir}/Generated/{topic}/%s_hisat2_spliced.sorted.bam" % sample for sample in samples]
+  output:
+    table="{targetdir}/Generated/{topic}/conditions.tsv",
+  log:
+    hisat="{targetdir}/Logs/{topic}/prepare_dge.log",
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/prepare_dge.benchmark"
+  run:
+    import pandas as pd
+    cond = pd.DataFrame(index=list(map(lambda x: x.replace('/', '.'), input)), data=None)
+    cond['condition'] = list(map(lambda x: 'ctrl' if 'Scr_V' in x else 'TNF', cond.index))
+    cond.to_csv(output[0], sep="\t", index_label='# sample_name')
+
+rule rnaseq_dge:
+  input:
+    counts="{targetdir}/Generated/{topic}/RNA_Scr_feature_counts.tsv",
+    summary="{targetdir}/Generated/{topic}/RNA_Scr_feature_counts.tsv.summary",
+    conds="{targetdir}/Generated/{topic}/conditions.tsv",
+    script="{targetdir}/Generated/{topic}/deseq2.R",
+  output:
+    res_norm="{targetdir}/Generated/{topic}/dge/counts_deseq2_normalized.tsv",
+    res="{targetdir}/Generated/{topic}/dge/deseq2_comparisons/deseq2_results_ctrl_Vs_TNF.csv",
+    vis_assrel="{targetdir}/Generated/{topic}/dge/visualization/counts_assignment_relative.svg",
+    vis_assabs="{targetdir}/Generated/{topic}/dge/visualization/counts_assignment_absolute.svg",
+    vis_heat="{targetdir}/Generated/{topic}/dge/visualization/correlation_heatmap.svg",
+    vis_pca="{targetdir}/Generated/{topic}/dge/visualization/pca.svg",
+  log:
+    hisat="{targetdir}/Logs/{topic}/dge.log",
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/dge.benchmark"
+  conda:
+    "env_dge.yaml"
+  shell:
+    "R --vanilla --file={input.script} --args --count-table {input.counts} --conditions {input.conds} --featcounts-log {input.summary} --output `dirname {output.res_norm}` 2> {log}"
+
+rule exec_tests_rnaseq:
+  input:
+    rules.build_image.output,
+    rules.files_rnaseq.output,
+    script='RNAseq/rnaseq.tests.make',
+    sampleSeqs=["%s/Generated/RNAseq/%s.fastq.gz" % (relpath(config['dir_dist']), sample) for sample in samples],
+    counts="%s/Generated/RNAseq/RNA_Scr_feature_counts.tsv" % relpath(config['dir_dist']),
+  output:
+    "%s/Testres/rnaseq.txt" % relpath(config['dir_dist'])
+  log:
+    "%s/Logs/container_tests/rnaseq.log" % relpath(config['dir_dist'])
+  benchmark:
+    "%s/Benchmarks/container_tests/rnaseq.benchmark" % relpath(config['dir_dist'])
+  params:
+    proxy=lambda wildcards: config['proxy'],
+    mount=join(config['dir_dist'], 'Generated'),
+    tag=config['podman']['tagprefix']
+  shell:
+    'podman run -v ./{input.script}:/home/jovyan/makefile -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag} /bin/bash -c "source /opt/conda/etc/profile.d/conda.sh; conda activate rnaseq; make" 2>> {log} >> {output}'
+    ' && echo "=====passed=====" >> {output} 2>> {log}'
+    ' && date >> {output} 2>> {log}'
+
+rule rnaseq:
+  input:
+    rules.files_rnaseq.output,
+    "%s/Generated/RNAseq/multiQC" % relpath(config['dir_dist']),
+    "%s/Generated/RNAseq/multiQC_trimmed" % relpath(config['dir_dist']),
+    rules.exec_tests_rnaseq.output,
+    "%s/Generated/RNAseq/dge/deseq2_comparisons/deseq2_results_ctrl_Vs_TNF.csv" % relpath(config['dir_dist']),

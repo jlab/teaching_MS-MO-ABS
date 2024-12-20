@@ -1,0 +1,23 @@
+name: tour
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - mafft
+  - hmmer
+  - fasttree
+  - cd-hit
+  - mash
+  - prodigal
+  - diamond
+  - spades
+  - viennarna
+  - infernal
+  - condastats
+  - matplotlib-venn
+  - conda-forge::wordcloud
+  - openpyxl
+  - matplotlib
+  - seaborn
+  - nbconvert
+  - ipython

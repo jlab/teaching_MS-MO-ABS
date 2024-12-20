@@ -1,0 +1,75 @@
+rule ex_unix_BioinfFileformats:
+  input:
+    gtf="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.gtf.gz",
+    fasta="{targetdir}/Generated/Unix/chr1.fa.gz"
+  output:
+    bed="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.chr1.bed.gz",
+    mapping="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.chr1.mapping.txt.gz",
+    fasta="{targetdir}/Generated/Unix/hg19.ncbiRefSeq.chr1.fasta.gz"
+  log:
+    bed="{targetdir}/Logs/Unix/hg19chr1.bed.log",
+    mapping="{targetdir}/Logs/Unix/hg19chr1.mapping.log",
+    fasta="{targetdir}/Logs/Unix/hg19chr1.fasta.log",
+  benchmark:
+    "{targetdir}/Benchmarks/Unix/hg19chr1.benchmark"
+  conda:
+    "env_unix.yaml"
+  threads:
+    1
+  shell:
+    'zcat {input.gtf} | grep -P "^chr1\t" | gtf2bed | gzip -c > {output.bed} 2> {log.bed}'
+    ' && zcat {output.bed} | awk \'BEGIN{{FS="\t"}}{{if ($8~/transcript/)print $10}}\' | awk \'NR==1 {{print "#name","name2"}}BEGIN{{FS="\\""}}{{print $4"\t"$2}}\' | gzip -c > {output.mapping} 2> {log.mapping}'
+    ' && pwd=`pwd` 2> {log.fasta}'
+    ' && tmp=`mktemp -d -p /var/scratch/ || mktemp -d` 2>> {log.fasta}'
+    ' && zcat {input.fasta} > $tmp/fasta 2>> {log.fasta}'
+    ' && zcat {output.bed} | grep -P "\ttranscript\t" 2>> {log.fasta} > $tmp/bed'
+    ' && cd $tmp 2>> $pwd/{log.fasta}'
+    ' && bedtools getfasta -fi fasta -bed bed -name | fold -w 80 > tmp.faa 2>> $pwd/{log.fasta}'
+    ' && gzip tmp.faa -c > $pwd/{output.fasta} 2>> $pwd/{log.fasta}'
+    ' && cd $pwd 2>> $pwd/{log.fasta}'
+    ' && rm -rf $tmp 2>> $pwd/{log.fasta}'
+
+files = ['awk.txt', 'students.txt', 'users.txt', 'script_backup_copy.sh', 'script_compare_numbers.sh', 'faust.txt', 'faust_long.txt', 'GRCh37_ucsc_hg19.gtf']
+rule files_unix:
+  input:
+    ["../data/Unix/%s" % f for f in files]
+  output:
+    ["%s/Generated/Unix/%s" % (relpath(config['dir_dist']), f) for f in files]
+  log:
+    "%s/Logs/Unix/files_unix.log" % relpath(config['dir_dist'])
+  shell:
+    'srcs=({input}) 2> {log}'
+    ' && trgs=({output}) 2>> {log}'
+    ' && for i in "${{!srcs[@]}}"; do '
+    ' cp -v "${{srcs[i]}}" "${{trgs[i]}}" 2>> {log};'
+    ' done'
+
+rule exec_tests_unix:
+  input:
+    rules.build_image.output,
+    rules.files_unix.output,
+    script='Unix/unix.tests.make',
+    hg19chr1="%s/Generated/Unix/hg19.ncbiRefSeq.chr1.fasta.gz" % relpath(config['dir_dist'])
+  output:
+    "%s/Testres/unix.txt" % relpath(config['dir_dist'])
+  log:
+    "%s/Logs/container_tests/unix.log" % relpath(config['dir_dist'])
+  benchmark:
+    "%s/Benchmarks/container_tests/unix.benchmark" % relpath(config['dir_dist'])
+  params:
+    proxy=lambda wildcards: config['proxy'],
+    mount=join(config['dir_dist'], 'Generated'),
+    tag=config['podman']['tagprefix']
+  shell:
+    'podman run -v ./{input.script}:/home/jovyan/makefile -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag} /bin/bash -c "make" 2>> {log} >> {output}'
+    ' && echo "=====passed=====" >> {output} 2>> {log}'
+    ' && date >> {output} 2>> {log}'
+
+rule unix:
+  input:
+    rules.files_unix.output,
+    "%s/Generated/Unix/Helicobacter_pylori_B8.fna.gz" % relpath(config['dir_dist']),
+    "%s/Generated/Unix/Helicobacter_pylori_B8.gbff.gz" % relpath(config['dir_dist']),
+    "%s/Generated/Unix/Helicobacter_pylori_B8.faa.gz" % relpath(config['dir_dist']),
+    '%s/Generated/Unix/hg19.ncbiRefSeq.chr1.bed.gz' % relpath(config['dir_dist']),
+    rules.exec_tests_unix.output

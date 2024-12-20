@@ -1,0 +1,41 @@
+files = ['../JHaaS/Python/python_intro.ipynb', 'MolecularWeight_tair7.tsv', 'TargetP_analysis_tair7.tsv', "Python/Pandas_exercise.ipynb", "Python/Pandas_solutions.ipynb", "Python/Python_exercise.ipynb", "Python/Python_solutions.ipynb"]
+rule files_python:
+  input:
+    ["../data/%s" % f for f in files]
+  output:
+    ["%s/Generated/Python/%s" % (relpath(config['dir_dist']), os.path.basename(f)) for f in files]
+  log:
+    "%s/Logs/Python/files_python.log" % relpath(config['dir_dist'])
+  shell:
+    'srcs=({input}) 2> {log}'
+    ' && trgs=({output}) 2>> {log}'
+    ' && for i in "${{!srcs[@]}}"; do '
+    ' cp -v "${{srcs[i]}}" "${{trgs[i]}}" 2>> {log};'
+    ' done'
+
+rule exec_tests_python:
+  input:
+    rules.build_image.output,
+    rules.files_python.output,
+    ["%s/Generated/Tour/%s" % (relpath(config['dir_dist']), f) for f in ['meiers.txt', 'meiers.fasta']],
+    script='Python/python.tests.make'
+  output:
+    "%s/Testres/python.txt" % relpath(config['dir_dist'])
+  log:
+    "%s/Logs/container_tests/python.log" % relpath(config['dir_dist'])
+  benchmark:
+    "%s/Benchmarks/container_tests/python.benchmark" % relpath(config['dir_dist'])
+  params:
+    proxy=lambda wildcards: config['proxy'],
+    mount=join(config['dir_dist'], 'Generated'),
+    tag=config['podman']['tagprefix']
+  shell:
+    'podman run -v ./{input.script}:/home/jovyan/makefile -v {params.mount}:/Data/ -e http_proxy="{params.proxy}" -e https_proxy="{params.proxy}" -e ftp_proxy="{params.proxy}" -t {params.tag} /bin/bash -c "make" 2>> {log} >> {output}'
+    ' && echo "=====passed=====" >> {output} 2>> {log}'
+    ' && date >> {output} 2>> {log}'
+
+
+rule python:
+  input:
+    rules.files_python.output,
+    rules.exec_tests_python.output

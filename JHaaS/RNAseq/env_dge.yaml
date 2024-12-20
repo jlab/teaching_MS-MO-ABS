@@ -1,0 +1,13 @@
+# module: dge_analysis
+name: dge_analysis
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bioconductor-deseq2=1.40.2
+  - r-ggplot2
+  - r-reshape2
+  - r-stringi
+  - r-pheatmap
+  - r-gplots
+  - r-svglite

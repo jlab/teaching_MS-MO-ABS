@@ -1,0 +1,2 @@
+chr1_2462201_2462700	fimo.	nucleotide_motif	202	213	42.9	-	.
+chr1_3459401_3460500	fimo	nucleotide_motif	736	747	41.7	-	.

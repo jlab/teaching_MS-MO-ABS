@@ -1,0 +1,10 @@
+browser position chr4:56010000-56030000
+browser pix 1000
+browser hide all
+browser pack snp142
+browser full knownGene
+track name=clones description="Clones" visibility=2 color=200,0,200 useScore=1 db=hg38
+chr4 56010000 56015000 cloneA 900 +
+chr4 56014000 56019000 cloneB 200 -
+chr4 56017000 56023000 cloneC 800 +
+chr4 56021000 56028000 cloneD 300 -
