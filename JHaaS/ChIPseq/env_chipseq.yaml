@@ -6,4 +6,5 @@ dependencies:
   - macs2=2.2.9.1=py39hff71179_1
   - bedtools
   - homer
-
+  - bedops
+  - deeptools
