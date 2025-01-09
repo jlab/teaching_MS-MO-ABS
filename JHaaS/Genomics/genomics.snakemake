@@ -1,4 +1,7 @@
-files = ['custom_track.bed', 'eden.gff']
+files = ['custom_track.bed', 
+         'eden.gff',
+	 'ucsc_table_chr22_CpGislands.fasta',
+	 'ucsc_table_clock_snps.tsv']
 rule files_genomics:
   input:
     ["../data/Genomics/%s" % f for f in files]
