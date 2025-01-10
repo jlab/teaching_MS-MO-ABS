@@ -1,5 +1,6 @@
 SHELL=/usr/bin/bash
 DATA=/Data
+SAMTOOLS=/opt/conda/envs/rnaseq/bin/samtools  # requires that the rnaseq environment has been installed first!
 
 all: test_model_plot test_homer test_corrplot
 
@@ -16,9 +17,9 @@ test_corrplot:
 	rm -f tmp_tnf1.bam tmp_tnf1.bam.bai
 	rm -f tmp_tnf2.bam tmp_tnf2.bam.bai
 	rm -f  tmp.npz tmp.pdf
-	samtools view -h ${DATA}/ChIPseq/p65_ChIP-seq_TNF_1_hisat2_unspliced.sorted.bam | head -n 4000 | samtools view -b > tmp_tnf1.bam
-	samtools view -h ${DATA}/ChIPseq/p65_ChIP-seq_TNF_2_hisat2_unspliced.sorted.bam | head -n 4000 | samtools view -b > tmp_tnf2.bam
-	samtools index tmp_tnf1.bam
-	samtools index tmp_tnf2.bam
+	${SAMTOOLS} view -h ${DATA}/ChIPseq/p65_ChIP-seq_TNF_1_hisat2_unspliced.sorted.bam | head -n 4000 | ${SAMTOOLS} view -b > tmp_tnf1.bam
+	${SAMTOOLS} view -h ${DATA}/ChIPseq/p65_ChIP-seq_TNF_2_hisat2_unspliced.sorted.bam | head -n 4000 | ${SAMTOOLS} view -b > tmp_tnf2.bam
+	${SAMTOOLS} index tmp_tnf1.bam
+	${SAMTOOLS} index tmp_tnf2.bam
 	multiBamSummary BED-file --BED ${DATA}/ChIPseq/peakinspection/p65_TNF_Vehicle_consensus.bed --bamfiles tmp_tnf1.bam tmp_tnf2.bam --outFileName tmp.npz
 	plotCorrelation --corData tmp.npz --plotFile tmp.pdf --whatToPlot heatmap --corMethod pearson --plotNumbers --removeOutliers
