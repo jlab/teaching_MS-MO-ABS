@@ -56,50 +56,93 @@ rule chipseq_plot_model:
     "pwd=`pwd` 2> {log}"
     " && cd `dirname {output}` 2>> $pwd/{log} && cat `basename {input}` | R --vanilla 2>> $pwd/{log}"
 
-rule chipseq_extract_bed:
+rule chipseq_intersect_replicates:
   input:
-    "{targetdir}/Generated/{topic}/callpeak/p65_{fore}-vs-{back}_peaks.narrowPeak",
+    rep1="{targetdir}/Generated/{topic}/callpeak/p65_{fore}_1-vs-{fore}_peaks.narrowPeak",
+    rep2="{targetdir}/Generated/{topic}/callpeak/p65_{fore}_2-vs-{fore}_peaks.narrowPeak",
   output:
-    "{targetdir}/Generated/{topic}/peakinspection/p65_{fore}-vs-{back}_peaks.narrowPeak.bed",
+    "{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_intersect.narrowPeak",
   log:
-    "{targetdir}/Logs/{topic}/peakinspection/extract_bed/p65_{fore}-vs-{back}_model.log"
+    "{targetdir}/Logs/{topic}/peakinspection/p65_{fore}_intersect.log"
   benchmark:
-    "{targetdir}/Benchmarks/{topic}/peakinspection/extract_bed/p65_{fore}-vs-{back}_model.benchmark"
-  threads:
-    1
-  shell:
-    "cut -f 1-3 {input} > {output} 2> {log}"
-
-rule chipseq_intersect_bed:
-  input:
-    rep1="{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_1-vs-{fore}_peaks.narrowPeak.bed",
-    rep2="{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_2-vs-{fore}_peaks.narrowPeak.bed",
-  output:
-    "{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_intersect.bed",
-  log:
-    "{targetdir}/Logs/{topic}/peakinspection/intersect_bed.p65_{fore}_model.log"
-  benchmark:
-    "{targetdir}/Benchmarks/{topic}/peakinspection/intersect_bed.p65_{fore}_model.benchmark"
+    "{targetdir}/Benchmarks/{topic}/peakinspection/p65_{fore}_intersect.benchmark"
   conda:
     "env_chipseq.yaml"
   threads:
     1
   shell:
-    "bedtools intersect -a {input.rep1} -b {input.rep2} -f 0.50 -r > {output} 2> {log}"
+    "bedtools intersect -a {input.rep1} -b {input.rep2} -f 0.5 -r > {output} 2> {log}"
 
-rule chipseq_intersect_top:
+rule chipseq_intersect_shared:
   input:
-    "{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_intersect.bed",
+    fore="{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_intersect.narrowPeak",
+    back="{targetdir}/Generated/{topic}/peakinspection/p65_{back}_intersect.narrowPeak",
   output:
-    "{targetdir}/Generated/{topic}/peakinspection/p65_{fore}-top{number}_intersect.bed",
+    "{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_{back}shared.narrowPeak",
   log:
-    "{targetdir}/Logs/{topic}/peakinspection/intersect_top{number}.p65_{fore}_model.log"
+    "{targetdir}/Logs/{topic}/peakinspection/p65_{fore}_{back}shared.log"
   benchmark:
-    "{targetdir}/Benchmarks/{topic}/peakinspection/intersect_top{number}.p65_{fore}_model.benchmark"
+    "{targetdir}/Benchmarks/{topic}/peakinspection/p65_{fore}_{back}shared.benchmark"
+  conda:
+    "env_chipseq.yaml"
   threads:
     1
   shell:
-    "cat {input} | sort -k 7,7nr | head -n {wildcards.number} > {output} 2> {log} || true"  # I am kind of desparate, since I don't understand why this pipe fails. Results are present and correct?!
+    "bedtools intersect -a {input.fore} -b {input.back} -f 0.5 -r > {output} 2> {log}"
+
+rule chipseq_consensus_peaks:
+  input:
+    fore="{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_intersect.narrowPeak",
+    back="{targetdir}/Generated/{topic}/peakinspection/p65_{back}_intersect.narrowPeak",
+  output:
+    "{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_{back}_consensus.bed",
+  log:
+    "{targetdir}/Logs/{topic}/peakinspection/p65_{fore}_{back}_consensus.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/peakinspection/p65_{fore}_{back}_consensus.benchmark"
+  conda:
+    "env_chipseq.yaml"
+  threads:
+    1
+  shell:
+    "cat {input.fore} {input.back} | bedtools sort | bedtools merge > {output} 2> {log}"
+
+rule chipseq_corrPlot:
+  input:
+    tnf1="{targetdir}/Generated/{topic}/p65_ChIP-seq_{fore}_1_hisat2_unspliced.sorted.bam",
+    tnf2="{targetdir}/Generated/{topic}/p65_ChIP-seq_{fore}_2_hisat2_unspliced.sorted.bam",
+    vehicle1="{targetdir}/Generated/{topic}/p65_ChIP-seq_{back}_1_hisat2_unspliced.sorted.bam",
+    vehicle2="{targetdir}/Generated/{topic}/p65_ChIP-seq_{back}_2_hisat2_unspliced.sorted.bam",
+    consensus="{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_{back}_consensus.bed"
+  output:
+    data="{targetdir}/Generated/{topic}/correlationplot/p65_{fore}_{back}_correlationPlot.npz",
+    graph="{targetdir}/Generated/{topic}/correlationplot/p65_{fore}_{back}_correlationPlot.pdf",
+    matrix="{targetdir}/Generated/{topic}/correlationplot/p65_{fore}_{back}_correlationPlot.txt",
+  log:
+    "{targetdir}/Logs/{topic}/correlationplot/p65_{fore}_{back}_correlationPlot.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/correlationplot/p65_{fore}_{back}_correlationPlot.benchmark"
+  conda:
+    "env_chipseq.yaml"
+  resources:
+    ntasks="4",
+  shell:
+    "multiBamSummary BED-file --BED {input.consensus} --bamfiles {input.tnf1} {input.tnf2} {input.vehicle1} {input.vehicle2} --outFileName {output.data} -p {resources.ntasks} --labels {wildcards.fore}1 {wildcards.fore}2 {wildcards.back}1 {wildcards.back}2 2> {log}"
+    " && plotCorrelation --corData {output.data} --plotFile {output.graph} --outFileCorMatrix {output.matrix} --whatToPlot heatmap --corMethod pearson --plotNumbers --removeOutliers 2>> {log}"
+
+rule chipseq_intersect_top:
+  input:
+    "{targetdir}/Generated/{topic}/peakinspection/p65_{fore}_intersect.narrowPeak",
+  output:
+    "{targetdir}/Generated/{topic}/homer/p65_{fore}-top{number}_intersect.narrowPeak",
+  log:
+    "{targetdir}/Logs/{topic}/homer/p65_{fore}-top{number}_intersect.log"
+  benchmark:
+    "{targetdir}/Benchmarks/{topic}/homer/p65_{fore}-top{number}_intersect.benchmark"
+  threads:
+    1
+  shell:
+    "cat {input} | sort -k 7,7nr | head -n {wildcards.number} > {output} 2>> {log} || true"  # I am kind of desparate, since I don't understand why this pipe fails. Results are present and correct?!
 
 rule chipseq_prepareHomer:
   output:
@@ -124,7 +167,7 @@ rule chipseq_prepareHomer:
 rule chipseq_homer:
   input:
     data="{targetdir}/Generated/{topic}/homer/data",
-    peaks="{targetdir}/Generated/{topic}/peakinspection/p65_{fore}-top{number}_intersect.bed"
+    peaks="{targetdir}/Generated/{topic}/homer/p65_{fore}-top{number}_intersect.narrowPeak"
   output:
     directory("{targetdir}/Generated/{topic}/homer/p65_{fore}-top{number}.homer")
   log:
@@ -147,11 +190,13 @@ cmps = ['TNF_1-vs-TNF', 'TNF_2-vs-TNF', 'Vehicle_1-vs-Vehicle', 'Vehicle_2-vs-Ve
 rule exec_tests_chipseq:
   input:
     rules.build_image.output,
-    ["%s/Generated/ChIPseq/callpeak/p65_%s_peaks.xls" % (relpath(config['dir_dist']), cmp) for cmp in cmps],
-    top500="%s/Generated/ChIPseq/peakinspection/p65_TNF-top500_intersect.bed" % relpath(config['dir_dist']),
+    ["%s/Generated/ChIPseq/callpeak/p65_%s_peaks.narrowPeak" % (relpath(config['dir_dist']), cmp) for cmp in cmps],
+    top500="%s/Generated/ChIPseq/homer/p65_TNF-top500_intersect.narrowPeak" % relpath(config['dir_dist']),
     bam_fore="%s/Generated/ChIPseq/p65_ChIP-seq_TNF_1_hisat2_unspliced.sorted.bam" % relpath(config['dir_dist']),
+    bam_fore2="%s/Generated/ChIPseq/p65_ChIP-seq_TNF_2_hisat2_unspliced.sorted.bam" % relpath(config['dir_dist']),
     bam_back="%s/Generated/ChIPseq/p65_Input_TNF_hisat2_unspliced.sorted.bam" % relpath(config['dir_dist']),
     script='ChIPseq/chipseq.tests.make',
+    consensus="%s/Generated/ChIPseq/peakinspection/p65_TNF_Vehicle_consensus.bed" % relpath(config['dir_dist']),
   output:
     "%s/Testres/chipseq.txt" % relpath(config['dir_dist'])
   log:
@@ -172,5 +217,6 @@ rule chipseq:
     ["%s/Generated/ChIPseq/callpeak/p65_%s_model.pdf" % (relpath(config['dir_dist']), cmp) for cmp in cmps],
     "%s/Generated/ChIPseq/multiQC_report" % relpath(config['dir_dist']),
     rules.exec_tests_chipseq.output,
+    "%s/Generated/ChIPseq/correlationplot/p65_TNF_Vehicle_correlationPlot.pdf" % relpath(config['dir_dist']),
     "%s/Generated/ChIPseq/homer/p65_TNF-top500.homer" % relpath(config['dir_dist']),
     "%s/Generated/ChIPseq/homer/p65_Vehicle-top500.homer" % relpath(config['dir_dist']),
