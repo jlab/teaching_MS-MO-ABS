@@ -1,4 +1,4 @@
-files = ["DB1.fasta", "DB2.fasta", "Fasta2.fa", "Fasta3.fa", "FASTA1.fasta", "UnknownGene.fasta", "UnknownProtein.fasta"]
+files = ["DB1.fasta", "DB2.fasta", "Fasta2.fa", "Fasta3.fa", "FASTA1.fasta", "UnknownGene.fasta", "UnknownProtein.fasta", "V493_nr28_tp01_R1.fastq.gz"]
 rule files_ngs:
   input:
     ["../data/NGS/%s" % f for f in files]

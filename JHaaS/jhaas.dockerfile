@@ -1,5 +1,4 @@
 # wie koennen die User untereinander Dateien austauschen?
-# wieso gibt es zu viele Layer im Testcontainer?
 
 FROM quay.io/jupyter/scipy-notebook
 
@@ -83,5 +82,9 @@ RUN sed 's#^GENOMES#GENOMES\nhg19\tv7.0\thuman genome and annotation for UCSC hg
 USER root
 COPY bashrc /etc/bashrc.jhaas
 RUN cat /etc/bashrc.jhaas >> /etc/bash.bashrc; conda init --system
+
+# enable the user to jump into the actual root in the left file browser panel
+# and define ~/ as the "preferred" directory, i.e. show the house icon to go to "home"
+RUN echo "c.ServerApp.root_dir = '/'" >> /etc/jupyter/jupyter_server_config.py && echo "c.FileContentsManager.preferred_dir = '/home/jovyan'" >> /etc/jupyter/jupyter_server_config.py
 
 USER ${NB_UID}
