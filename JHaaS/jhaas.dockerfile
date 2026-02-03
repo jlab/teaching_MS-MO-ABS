@@ -1,3 +1,6 @@
+# VERSION: 0.5
+# ^^ version used by github action to determine image tag. Must be first line!
+
 # wie koennen die User untereinander Dateien austauschen?
 
 FROM quay.io/jupyter/scipy-notebook
