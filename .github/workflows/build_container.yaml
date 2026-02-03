@@ -37,7 +37,7 @@ jobs:
       - name: prepare image context
         run: |
           mkdir img_context
-          cp Tour/env_tour.yaml RNAseq/env_rnaseq.yaml RNAseq/env_dge.yaml NGS/env_ngs.yaml ChIPseq/env_chipseq.yaml jhaas.dockerfile img_context/
+          cp JHaaS/Tour/env_tour.yaml JHaaS/RNAseq/env_rnaseq.yaml JHaaS/RNAseq/env_dge.yaml JHaaS/NGS/env_ngs.yaml JHaaS/ChIPseq/env_chipseq.yaml JHaaS/jhaas.dockerfile img_context/
 
       - name: Build JHaaS image and push to harbor.computational.bio.uni-giessen.de registry
         uses: docker/build-push-action@v6
