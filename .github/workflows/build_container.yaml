@@ -41,5 +41,5 @@ jobs:
           push: true
           file: JHaaS/jhaas.dockerfile
           tags: |
-            ghcr.io/${{ github.repository }}/${{ matrix.container }}:${{ env.IMAGE_TAG }}
-            ghcr.io/${{ github.repository }}/${{ matrix.container }}:latest
+            harbor.computational.bio.uni-giessen.de/tinqiita/jhaas_msmoabs:${{ env.IMAGE_TAG }}
+            harbor.computational.bio.uni-giessen.de/tinqiita/jhaas_msmoabs:latest
