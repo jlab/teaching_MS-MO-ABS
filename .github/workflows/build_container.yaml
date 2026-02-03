@@ -31,8 +31,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: harbor.computational.bio.uni-giessen.de
-          username: ${{ vars.HARBOR_CB_USERNAME }}
-          password: ${{ secrets.HARBOR_CB_SECRET }}
+          username: ${{ vars.HARBOR_CB_USERNAME_test }}
+          password: ${{ secrets.HARBOR_CB_SECRET_test }}
 
       - name: Build JHaaS image and push to harbor.computational.bio.uni-giessen.de registry
         uses: docker/build-push-action@v6
