@@ -34,10 +34,15 @@ jobs:
           username: ${{ vars.HARBOR_CB_USERNAME_test }}
           password: ${{ secrets.HARBOR_CB_SECRET_test }}
 
+      - name: prepare image context
+        run: |
+          mkdir img_context
+          cp Tour/env_tour.yaml RNAseq/env_rnaseq.yaml RNAseq/env_dge.yaml NGS/env_ngs.yaml ChIPseq/env_chipseq.yaml jhaas.dockerfile img_context/
+
       - name: Build JHaaS image and push to harbor.computational.bio.uni-giessen.de registry
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: img_context
           push: true
           file: JHaaS/jhaas.dockerfile
           tags: |
