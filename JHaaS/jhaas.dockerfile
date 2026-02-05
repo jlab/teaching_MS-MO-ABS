@@ -1,3 +1,6 @@
+# VERSION: 0.5
+# ^^ version used by github action to determine image tag. Must be first line!
+
 # wie koennen die User untereinander Dateien austauschen?
 
 FROM quay.io/jupyter/scipy-notebook
@@ -74,6 +77,14 @@ SHELL ["conda", "run", "-n", "chipseq", "/bin/bash", "-c"]
 RUN cd $CONDA_PREFIX/share/homer && mv data old_data && ln -s /Data/ChIPseq/homer/data .
 RUN sed 's#^ORGANISMS#ORGANISMS\nhuman\tv7.0\tHomo sapiens (human) accession and ontology information\thttp://homer.ucsd.edu/homer/data/organisms/human.v7.0.zip\tdata/accession/\t9606,NCBI Gene#' -i $CONDA_PREFIX/share/homer/config.txt
 RUN sed 's#^GENOMES#GENOMES\nhg19\tv7.0\thuman genome and annotation for UCSC hg19\thttp://homer.ucsd.edu/homer/data/genomes/hg19.v7.0.zip\tdata/genomes/hg19/\thuman,default#' -i $CONDA_PREFIX/share/homer/config.txt
+
+# re-install man. Unfortunately, this requires "unminimizing" the image
+USER root
+RUN yes | unminimize
+RUN apt-get update && \
+    apt-get install -y manpages manpages-posix man-db && \
+    mandb && \
+    rm -rf /var/lib/apt/lists/*
 
 # modify bash behaviour:
 #   - do NOT make machine name part of the prompt, as it is very length in JHaaS
