@@ -46,5 +46,5 @@ jobs:
           push: true
           file: JHaaS/jhaas.dockerfile
           tags: |
-            harbor.computational.bio.uni-giessen.de/tinqiita/jhaas_msmoabs:${{ env.IMAGE_TAG }}
-            harbor.computational.bio.uni-giessen.de/tinqiita/jhaas_msmoabs:latest
+            harbor.computational.bio.uni-giessen.de/jhaas-notebooks/jhaas_msmoabs:${{ env.IMAGE_TAG }}
+            harbor.computational.bio.uni-giessen.de/jhaas-notebooks/jhaas_msmoabs:latest
