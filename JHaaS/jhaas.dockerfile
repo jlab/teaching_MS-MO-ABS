@@ -1,4 +1,4 @@
-# VERSION: 0.5
+# VERSION: 0.6
 # ^^ version used by github action to determine image tag. Must be first line!
 
 # wie koennen die User untereinander Dateien austauschen?
@@ -8,7 +8,7 @@ FROM quay.io/jupyter/scipy-notebook
 # install missing ubuntu packages
 USER root
 RUN apt-get -y update
-RUN apt-get -y install bc bsdmainutils time
+RUN apt-get -y install bc bsdmainutils time zsh
 
 # variables for docker file
 ARG CE_TOUR=bioinftour
